@@ -62,6 +62,17 @@ For diagnostics, open Serial Monitor at 115200 baud. A working display reports `
 
 ## Start live monitoring
 
+### Recommended: floating widget
+
+1. Double-click `start_quotaglow.cmd`.
+2. Wait for the first desktop reading.
+3. To use the OLED, select its COM port and choose **Connect Module**.
+4. Optionally enable **Start with Windows**.
+
+The widget works without the ESP32 and refreshes every 60 seconds.
+
+### Legacy command-window monitor
+
 1. Set `DEMO_MODE=0`.
 2. Confirm Codex is installed and signed in.
 3. Double-click `start_monitor.cmd`.

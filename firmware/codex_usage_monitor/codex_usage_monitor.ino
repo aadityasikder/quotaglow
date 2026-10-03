@@ -13,6 +13,7 @@ constexpr unsigned long RESET_PAGE_MS = 4000UL;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 bool displayReady = false;
+bool displayPowered = true;
 bool haveLimits = false;
 bool usageAllowed = true;
 int primaryRemaining = 0;
@@ -64,6 +65,7 @@ void drawProgressBar(int x, int y, int width, int height, int percent) {
 }
 
 void drawCenteredMessage(const String &line1, const String &line2 = "") {
+  if (!displayPowered) return;
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
   display.setTextSize(1);
@@ -77,7 +79,7 @@ void drawCenteredMessage(const String &line1, const String &line2 = "") {
 }
 
 void drawLimits() {
-  if (!displayReady) return;
+  if (!displayReady || !displayPowered) return;
 
   if (!haveLimits) {
     drawCenteredMessage(statusMessage);
@@ -173,6 +175,23 @@ void handleLimits(const String fields[], int count) {
   drawLimits();
 }
 
+void handlePower(const String fields[], int count) {
+  if (count != 2 || !displayReady) return;
+
+  if (fields[1] == "OFF") {
+    display.clearDisplay();
+    display.display();
+    display.ssd1306_command(SSD1306_DISPLAYOFF);
+    displayPowered = false;
+    Serial.println("OLED powered off by PC");
+  } else if (fields[1] == "ON") {
+    display.ssd1306_command(SSD1306_DISPLAYON);
+    displayPowered = true;
+    Serial.println("OLED powered on by PC");
+    drawLimits();
+  }
+}
+
 void handleSerialLine(String line) {
   line.trim();
   if (line.length() == 0) return;
@@ -183,6 +202,8 @@ void handleSerialLine(String line) {
     handleLimits(fields, count);
   } else if (fields[0] == "STATUS") {
     handleStatus(fields, count);
+  } else if (fields[0] == "POWER") {
+    handlePower(fields, count);
   } else {
     Serial.println("Ignored unknown serial message");
   }
@@ -238,7 +259,7 @@ void loop() {
     }
   }
 
-  if (haveLimits && usageAllowed) {
+  if (displayPowered && haveLimits && usageAllowed) {
     bool resetPage = secondaryRemaining >= 0 && ((millis() / RESET_PAGE_MS) % 2 == 1);
     static bool wasStale = false;
     bool stale = millis() - lastValidUpdate >= STALE_AFTER_MS;

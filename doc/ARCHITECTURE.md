@@ -2,7 +2,7 @@
 
 ## Overview
 
-The monitor has two cooperating programs:
+The monitor has a reusable core and two user interfaces:
 
 ```text
 Codex account
@@ -11,7 +11,8 @@ Codex account
 Local Codex app-server
      │ JSON messages over standard input/output
      ▼
-PowerShell helper on Windows
+QuotaGlow PowerShell core
+     ├──────────────► Floating WPF desktop widget
      │ compact text messages over USB serial
      ▼
 ESP32 firmware
@@ -20,11 +21,17 @@ ESP32 firmware
 SSD1306 OLED
 ```
 
-The Windows helper is required because the ESP32 does not authenticate with OpenAI and does not hold account credentials.
+The desktop widget works independently of the ESP32. The Windows core is required because the ESP32 does not authenticate with OpenAI and does not hold account credentials.
+
+## Desktop widget
+
+`desktop-widget/QuotaGlow.ps1` is a borderless, always-on-top WPF interface. A background PowerShell runspace owns Codex polling so app-server startup and network delays cannot block the UI thread. Thread-safe queues carry refresh, pause, resume, and stop commands and return snapshots or errors.
+
+The UI thread owns the optional serial port. Successful snapshots update the widget first and are then mirrored to the module. A module failure therefore cannot interrupt desktop usage monitoring.
 
 ## Windows helper
 
-`pc-helper/codex_usage_helper.ps1` performs the following work:
+`pc-helper/QuotaGlow.Core.psm1` performs the following work for both interfaces:
 
 1. Opens the configured ESP32 COM port at 115200 baud.
 2. Locates `codex.exe` through the normal command path or the Codex desktop installation.
@@ -36,6 +43,8 @@ The Windows helper is required because the ESP32 does not authenticate with Open
 8. Converts window durations and reset timestamps into compact display text.
 9. Sends one update to the ESP32 every 60 seconds.
 
+`pc-helper/codex_usage_helper.ps1` remains as a console and demo interface for diagnostics.
+
 The helper never requests a model response and never uses reset credits. The rate-limit read is experimental and may need adjustment after a future Codex update.
 
 ## ESP32 firmware
@@ -45,6 +54,7 @@ The firmware:
 - Starts I²C on GPIO 21 and GPIO 22.
 - Detects the OLED at address `0x3C` or `0x3D`.
 - Receives newline-terminated USB serial messages.
+- Supports OLED wake and sleep commands from the widget.
 - Validates field count, numeric ranges, and message length.
 - Displays the two usage windows and progress bars.
 - Alternates their reset countdowns every four seconds.
@@ -60,7 +70,7 @@ Keep that boundary intact when extending the project. Do not copy Codex authenti
 ## Known constraints
 
 - Windows is required by the current PowerShell launcher.
-- The computer and helper must remain running.
+- The computer and widget/helper must remain running.
 - Communication uses USB rather than Wi-Fi.
 - The OLED layout targets 128×64 SSD1306-compatible displays.
 - The local Codex rate-limit operation is experimental.

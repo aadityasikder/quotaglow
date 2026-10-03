@@ -61,6 +61,6 @@ Non-sensitive settings are stored at:
 %LOCALAPPDATA%\QuotaGlow\settings.json
 ```
 
-The file contains only the selected COM port, widget position, and startup preference. It contains no OpenAI credentials, account IDs, or usage history.
+The file contains only the selected COM port, widget position, compact/expanded state, and startup preference. It contains no OpenAI credentials, account IDs, or usage history.
 
 Delete this file while QuotaGlow is closed to restore defaults.

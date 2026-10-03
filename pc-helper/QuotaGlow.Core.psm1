@@ -76,7 +76,7 @@ function Start-QuotaGlowAppServer {
             clientInfo = [ordered]@{
                 name = 'quotaglow'
                 title = 'QuotaGlow'
-                version = '1.1.0-dev'
+                version = '1.1.0'
             }
             capabilities = [ordered]@{ experimentalApi = $true }
         }

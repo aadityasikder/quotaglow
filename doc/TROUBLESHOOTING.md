@@ -34,6 +34,33 @@ Install **Adafruit GFX Library by Adafruit** through Arduino IDE's Library Manag
 - Close Arduino Serial Monitor.
 - Confirm the USB cable supports data.
 - Run with `DEMO_MODE=1` first.
+- In the desktop widget, select the correct COM port and click **Connect Module**.
+
+## Widget does not open
+
+- Run `start_quotaglow.vbs` again and wait several seconds.
+- Confirm Windows PowerShell is enabled.
+- From PowerShell, run `desktop-widget\QuotaGlow.ps1` without the hidden launcher to see an error message.
+
+## A PowerShell terminal appears with the widget
+
+Launch with `start_quotaglow.vbs`, not the `.ps1` file. The VBS launcher starts the widget invisibly. The `.ps1` file should only be run directly when troubleshooting.
+
+## Widget shows a Codex error
+
+- Confirm Codex desktop is installed and signed in.
+- Click **Refresh**.
+- Close and reopen the widget if the local service remains unavailable.
+
+The last successful values remain visible during a temporary error and become stale after three minutes.
+
+## Widget is outside the visible screen
+
+Close the widget and delete `%LOCALAPPDATA%\QuotaGlow\settings.json`. It will reopen centered.
+
+## Start with Windows does not work
+
+Toggle **Start with Windows** off and on again. The setting uses the current-user Run registry entry and does not require administrator access. Moving the repository afterward requires toggling the setting again so the saved path is updated.
 
 ## COM port not found
 

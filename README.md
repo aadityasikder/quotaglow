@@ -6,10 +6,19 @@ Your password, access token, and account ID are never sent to the ESP32 or saved
 
 ## Documentation
 
+- [Floating desktop widget](doc/DESKTOP_WIDGET.md)
 - [Complete setup guide](doc/SETUP.md)
 - [Architecture and security model](doc/ARCHITECTURE.md)
 - [USB serial protocol](doc/SERIAL_PROTOCOL.md)
 - [Troubleshooting guide](doc/TROUBLESHOOTING.md)
+
+## Floating desktop widget
+
+Double-click `start_quotaglow.vbs` to open the always-on-top Windows widget without a terminal window. It displays live Codex usage without requiring the ESP32, refreshes every 60 seconds, supports manual refresh, and shows the last successful refresh time.
+
+Use the minus button to collapse QuotaGlow into a rounded usage-only bar. The compact mode and screen position are remembered.
+
+The ESP32 is optional. Select its COM port and click **Connect Module** to mirror the widget values to the OLED. See the [widget guide](doc/DESKTOP_WIDGET.md) for every control and startup behavior.
 
 ## Project contents
 
@@ -91,6 +100,8 @@ If the demo works, return `DEMO_MODE` to `0` for live usage.
 5. Leave the helper window open.
 
 The first update may take several seconds. After that, the helper refreshes the values every 60 seconds.
+
+This command-window workflow remains available for diagnostics and backward compatibility. For normal use, prefer `start_quotaglow.vbs`.
 
 The OLED shows:
 

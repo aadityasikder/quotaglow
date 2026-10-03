@@ -1,5 +1,9 @@
 # Architecture
 
+In v1.2 the widget sends display lines through a background transport worker. It owns either USB serial or the authenticated Wi-Fi client, while Codex polling continues independently. The ESP32 processes both transports through the same parser.
+
+Wi-Fi credentials live only in ESP32 NVS. The device token is stored in ESP32 NVS and encrypted with Windows current-user DPAPI in desktop settings. Discovery exposes only non-sensitive metadata.
+
 ## Overview
 
 The monitor has a reusable core and two user interfaces:

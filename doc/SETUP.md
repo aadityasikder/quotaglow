@@ -1,5 +1,7 @@
 # Complete Setup Guide
 
+QuotaGlow 1.2 supports desktop-only use, USB serial, and local Wi-Fi. For wireless provisioning and pairing, follow [WIFI_SETUP.md](WIFI_SETUP.md) after uploading the firmware.
+
 This guide starts with the desktop widget because it is the fastest way to verify that QuotaGlow can read Codex usage. The ESP32 and OLED are optional and can be added afterward.
 
 ## Part 1: Desktop widget

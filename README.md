@@ -1,184 +1,162 @@
-# ESP32 Codex Usage Monitor
+# QuotaGlow
 
-This project displays your remaining Codex usage limits and reset countdowns on a 0.96-inch OLED. A Windows helper reads the limits from your existing Codex login and sends only display values to the ESP32 over USB.
+**A privacy-first desktop widget and optional ESP32 OLED display for Codex usage limits.**
 
-Your password, access token, and account ID are never sent to the ESP32 or saved in this project.
+[![Release](https://img.shields.io/github/v/release/aadityasikder/quotaglow?display_name=tag)](https://github.com/aadityasikder/quotaglow/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-6f62ff.svg)](LICENSE)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4.svg)](#requirements)
+[![Hardware: Optional](https://img.shields.io/badge/ESP32-optional-65d6ad.svg)](#optional-esp32-oled)
+
+QuotaGlow shows your Codex 5-hour and weekly usage windows, reset countdowns, and last refresh time in a small always-on-top Windows widget. It works without hardware. If you have an ESP32 and a 0.96-inch OLED, QuotaGlow can mirror the same information to a physical desk display over USB.
+
+## Features
+
+- Live Codex usage percentages and reset countdowns
+- Automatic refresh every 60 seconds
+- Manual refresh and last-successful-refresh timestamp
+- Full and compact draggable widget modes
+- Optional start with Windows
+- Optional ESP32 + SSD1306 OLED display
+- Module connect/disconnect and OLED sleep controls
+- No API key copied into the project or firmware
+- No Python, Node.js, npm, or installer required
+
+## Choose your setup
+
+| Setup | What you need | Recommended for |
+|---|---|---|
+| Desktop widget only | Windows and Codex desktop/CLI | Fastest setup; no electronics required |
+| Desktop widget + OLED | Above, plus ESP32 and SSD1306 OLED | A physical always-visible desk monitor |
+| Legacy command helper | Windows, Codex, and optional ESP32 | Diagnostics and protocol testing |
+
+## Requirements
+
+### Desktop widget
+
+- Windows 10 or Windows 11
+- Windows PowerShell 5.1
+- Codex desktop app or Codex CLI, installed and signed in
+
+### Optional ESP32 OLED
+
+- ESP32 development board
+- 0.96-inch 128×64 I²C OLED compatible with SSD1306
+- Four jumper wires and a USB data cable
+- Arduino IDE with ESP32 board support
+- `Adafruit GFX Library` and `Adafruit SSD1306`
+
+## Quick start: desktop widget only
+
+1. Download the latest release ZIP or clone the repository:
+
+   ```powershell
+   git clone https://github.com/aadityasikder/quotaglow.git
+   cd quotaglow
+   ```
+
+2. Double-click `start_quotaglow.vbs`.
+3. Wait a few seconds for the first Codex reading.
+4. Drag the widget wherever you want it.
+5. Use **-** for compact mode and **+** to expand it again.
+
+The VBS launcher intentionally starts QuotaGlow without a PowerShell terminal window. The widget works even when no ESP32 is attached.
+
+## Optional ESP32 OLED
+
+### 1. Wire the display
+
+Disconnect USB before changing wires.
+
+| OLED label | ESP32 label |
+|---|---|
+| `GND` | `GND` |
+| `VCC` | `3V3` |
+| `SCL` | `D22` / GPIO 22 |
+| `SDA` | `D21` / GPIO 21 |
+
+Use the labels printed on your modules; OLED pin order varies. Connect `VCC` to `3V3`, not `VIN`.
+
+### 2. Install Arduino libraries
+
+In **Arduino IDE → Tools → Manage Libraries**, install:
+
+- **Adafruit GFX Library** by Adafruit
+- **Adafruit SSD1306** by Adafruit
+
+Accept **Install All** if Arduino IDE offers required dependencies.
+
+### 3. Upload the firmware
+
+Open and upload:
+
+```text
+firmware/codex_usage_monitor/codex_usage_monitor.ino
+```
+
+The OLED should show `WAITING FOR PC`. The firmware automatically detects addresses `0x3C` and `0x3D`.
+
+### 4. Connect from QuotaGlow
+
+1. Close Arduino Serial Monitor so it releases the COM port.
+2. Open QuotaGlow with `start_quotaglow.vbs`.
+3. Select the ESP32 COM port.
+4. Click **Connect Module**.
+
+The OLED immediately receives the latest values and follows future refreshes. Disconnecting the module does not stop the desktop widget.
+
+## Widget controls
+
+| Control | Behavior |
+|---|---|
+| **Refresh** | Requests a new reading immediately |
+| **- / +** | Switches between full and compact mode |
+| **Scan** | Refreshes the COM-port list |
+| **Connect Module** | Opens the selected ESP32 serial port |
+| **Disconnect Module** | Stops OLED mirroring while desktop monitoring continues |
+| **Pause Monitoring** | Stops polling, disconnects the module, and darkens the OLED |
+| **Start with Windows** | Adds or removes a current-user startup entry |
+| **X** | Closes QuotaGlow and darkens a connected OLED |
+
+Settings are saved in `%LOCALAPPDATA%\QuotaGlow\settings.json`. This file contains UI preferences only—not credentials or account IDs.
 
 ## Documentation
 
-- [Floating desktop widget](doc/DESKTOP_WIDGET.md)
 - [Complete setup guide](doc/SETUP.md)
+- [Desktop widget guide](doc/DESKTOP_WIDGET.md)
+- [Troubleshooting](doc/TROUBLESHOOTING.md)
 - [Architecture and security model](doc/ARCHITECTURE.md)
 - [USB serial protocol](doc/SERIAL_PROTOCOL.md)
-- [Troubleshooting guide](doc/TROUBLESHOOTING.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
 
-## Floating desktop widget
+## Testing
 
-Double-click `start_quotaglow.vbs` to open the always-on-top Windows widget without a terminal window. It displays live Codex usage without requiring the ESP32, refreshes every 60 seconds, supports manual refresh, and shows the last successful refresh time.
-
-Use the minus button to collapse QuotaGlow into a rounded usage-only bar. The compact mode and screen position are remembered.
-
-The ESP32 is optional. Select its COM port and click **Connect Module** to mirror the widget values to the OLED. See the [widget guide](doc/DESKTOP_WIDGET.md) for every control and startup behavior.
-
-## Project contents
-
-```text
-codex_usage_monitor/
-├── firmware/
-│   └── codex_usage_monitor/
-│       └── codex_usage_monitor.ino
-├── pc-helper/
-│   └── codex_usage_helper.ps1
-├── start_monitor.cmd
-└── README.md
-```
-
-## Wiring
-
-Disconnect the ESP32 from USB before changing wires.
-
-| OLED pin | ESP32 pin |
-|---|---|
-| GND | GND |
-| VCC | 3V3 |
-| SDA | GPIO 21 |
-| SCL | GPIO 22 |
-
-Follow the labels printed on your OLED. Do not assume that every module has its pins in the same physical order.
-
-## Required Arduino libraries
-
-The firmware uses:
-
-- Adafruit GFX Library
-- Adafruit SSD1306
-
-Install them from **Arduino IDE → Tools → Manage Libraries** if they are not already installed.
-
-## Step 1: Upload the firmware
-
-1. Open `firmware\codex_usage_monitor\codex_usage_monitor.ino` in Arduino IDE.
-2. Connect the ESP32 and select its normal board and port settings.
-3. Upload the sketch.
-4. The OLED should say `WAITING FOR PC`.
-
-The firmware automatically checks the common OLED addresses `0x3C` and `0x3D`. If the display stays blank, open Serial Monitor at **115200 baud**. It will report whether an OLED was detected.
-
-## Step 2: Find and configure the COM port
-
-1. In Arduino IDE, open **Tools → Port**.
-2. Note the ESP32 port, for example `COM5`.
-3. Open `start_monitor.cmd` in Notepad.
-4. Change this line to match your port:
-
-```bat
-set "COM_PORT=COM5"
-```
-
-5. Save the file.
-
-Only one program can normally use the port at a time. Close Arduino Serial Monitor before starting the helper.
-
-## Step 3: Run the display demo first
-
-The demo verifies the OLED and USB communication without reading your Codex account.
-
-1. Open `start_monitor.cmd` in Notepad.
-2. Change `set "DEMO_MODE=0"` to `set "DEMO_MODE=1"`.
-3. Save and double-click `start_monitor.cmd`.
-4. The display will cycle through 0%, 50%, and 100% examples.
-5. After all three samples are sent, the helper pauses and waits for you to press a key. This is normal; demo mode is a short test rather than a continuously running monitor.
-
-If the demo works, return `DEMO_MODE` to `0` for live usage.
-
-## Step 4: Run the live monitor
-
-1. Confirm Codex is installed and signed in on this computer.
-2. Confirm `DEMO_MODE=0` in `start_monitor.cmd`.
-3. Close Arduino Serial Monitor.
-4. Double-click `start_monitor.cmd`.
-5. Leave the helper window open.
-
-The first update may take several seconds. After that, the helper refreshes the values every 60 seconds.
-
-This command-window workflow remains available for diagnostics and backward compatibility. For normal use, prefer `start_quotaglow.vbs`.
-
-The OLED shows:
-
-- Remaining percentage for the primary usage window.
-- Remaining percentage for the secondary usage window, when available.
-- Progress bars representing usage remaining.
-- Alternating reset countdowns.
-- `DATA STALE` if no valid update arrives for three minutes.
-- `LIMIT REACHED` if Codex explicitly reports that ordinary usage is unavailable.
-
-Press **Ctrl+C** in the helper window to stop it.
-
-## Troubleshooting
-
-### Port was not found
-
-Check **Arduino IDE → Tools → Port** again and update `COM_PORT` in `start_monitor.cmd`.
-
-### Access to the port is denied
-
-Close Arduino Serial Monitor and any other program using the ESP32 port, then restart the helper.
-
-### OLED remains blank
-
-- Check GND, 3V3, SDA/GPIO 21, and SCL/GPIO 22.
-- Follow the labels on the OLED rather than relying on physical pin order.
-- Open Serial Monitor at 115200 baud and look for the OLED detection message.
-
-### The OLED says CODEX ERROR
-
-- Confirm the Codex desktop app or CLI is installed and signed in.
-- Restart `start_monitor.cmd`.
-- A future Codex update may change the experimental local usage interface and require an update to the helper.
-
-The helper first checks the normal command path, then automatically searches the Codex desktop app installation under your Windows local application-data folder. You do not need to add Codex to `PATH` manually.
-
-### The OLED says NO LIMIT DATA
-
-Codex responded but did not provide a primary usage window. Check the usage display in Codex and restart the helper.
-
-### The OLED says DATA STALE
-
-The previous valid data is still displayed, but no new update arrived for three minutes. Check that the helper window is still running and that the USB cable remains connected.
-
-## Serial protocol
-
-Normal update:
-
-```text
-LIMITS|35|5h|2h18m|58|7d|3d04h|1
-```
-
-The fields are primary remaining percentage, primary window, primary reset, secondary remaining percentage, secondary window, secondary reset, and whether normal usage is allowed. A secondary percentage of `-1` means that no secondary window is available.
-
-Status messages:
-
-```text
-STATUS|CODEX_ERROR
-STATUS|NO_LIMIT_DATA
-```
-
-Serial settings are 115200 baud, 8 data bits, no parity, and one stop bit.
-
-## Optional command-line checks
-
-These checks do not require the ESP32 to be connected. Run them from PowerShell inside the project folder.
-
-Test fake data conversion:
+Run the local regression checks from PowerShell:
 
 ```powershell
-.\pc-helper\codex_usage_helper.ps1 -Demo -DryRun -Once
+.\tests\Test-QuotaGlow.ps1
 ```
 
-Read live Codex limits once and print the serial message:
+The checks validate PowerShell syntax, usage conversion, widget XAML, serial output, and legacy demo compatibility.
 
-```powershell
-.\pc-helper\codex_usage_helper.ps1 -DryRun -Once
-```
+## Privacy and security
 
-The local Codex usage operation is experimental. If a later Codex version changes it, the PowerShell helper may need to be updated.
+QuotaGlow uses the locally installed Codex app-server and your existing Codex sign-in. It does not place your password, access token, API key, or account ID in the repository, settings file, or ESP32 firmware. Only display-ready percentages, duration labels, reset countdowns, and allowed/blocked state are sent over USB.
+
+The Codex rate-limit interface used by QuotaGlow is experimental and may require updates after a future Codex release.
+
+## Current limitations
+
+- The desktop widget currently supports Windows only.
+- The computer must remain running for live updates.
+- ESP32 communication currently uses USB serial, not Wi-Fi.
+- The firmware targets 128×64 SSD1306-compatible I²C displays.
+
+## Contributing
+
+Issues and pull requests are welcome. Feature work targets `develop`; create a focused feature branch and see [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
+
+## License
+
+QuotaGlow is available under the [MIT License](LICENSE).

@@ -45,6 +45,18 @@ STATUS|NO_LIMIT_DATA
 
 If valid values were previously received, transient status messages do not erase them. After three minutes without another valid `LIMITS` message, the display shows `DATA STALE`.
 
+## OLED power messages
+
+```text
+POWER|OFF
+POWER|ON
+```
+
+- `POWER|OFF` clears the framebuffer and places the OLED controller in display-off mode. The ESP32 remains powered by USB.
+- `POWER|ON` wakes the OLED and redraws the most recently received values.
+
+Older `LIMITS` and `STATUS` messages are unchanged.
+
 ## Demo sequence
 
 Demo mode sends:

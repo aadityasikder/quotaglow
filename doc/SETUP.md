@@ -1,72 +1,146 @@
-# Setup Guide
+# Complete Setup Guide
 
-This guide takes the project from assembled hardware to live Codex usage on the OLED.
+This guide starts with the desktop widget because it is the fastest way to verify that QuotaGlow can read Codex usage. The ESP32 and OLED are optional and can be added afterward.
 
-## Hardware
+## Part 1: Desktop widget
+
+### Requirements
+
+- Windows 10 or Windows 11
+- Windows PowerShell 5.1, included with Windows
+- Codex desktop app or Codex CLI
+- An active Codex sign-in
+
+### Download QuotaGlow
+
+Choose one method.
+
+#### Release ZIP
+
+1. Open the [QuotaGlow releases page](https://github.com/aadityasikder/quotaglow/releases).
+2. Download the source ZIP for the latest version.
+3. Extract the complete folder to a permanent location.
+
+Do not run the launcher from inside the ZIP. If you move the project after enabling Windows startup, turn the startup checkbox off and on again to save the new path.
+
+#### Git
+
+```powershell
+git clone https://github.com/aadityasikder/quotaglow.git
+cd quotaglow
+```
+
+### Start the widget
+
+1. Confirm Codex is installed and signed in.
+2. Double-click `start_quotaglow.vbs`.
+3. Wait several seconds for the first reading.
+
+Success looks like:
+
+- A small QuotaGlow card appears without a terminal window.
+- The status becomes green.
+- The 5-hour and 7-day remaining percentages appear.
+- The last-refreshed time updates.
+
+Use **Refresh** to request a new reading. Use **-** to collapse the widget and **+** to expand it. Drag either view to position it.
+
+If this stage fails, stop and use [Troubleshooting](TROUBLESHOOTING.md) before adding hardware.
+
+## Part 2: Optional ESP32 OLED
+
+### Hardware
 
 - ESP32 development board
-- 0.96-inch 128×64 I²C OLED, compatible with SSD1306
+- 0.96-inch 128×64 I²C OLED compatible with SSD1306
 - Four jumper wires
 - USB data cable
-- Windows computer with Codex installed and signed in
+- Arduino IDE with ESP32 board support
 
-## Wiring
+### Wire the OLED
 
-Disconnect USB before changing any wires.
+Disconnect the ESP32 from USB before changing wires.
 
 | OLED label | ESP32 label |
 |---|---|
-| GND | GND |
-| VCC | 3V3 |
-| SCL | D22 / GPIO 22 |
-| SDA | D21 / GPIO 21 |
+| `GND` | `GND` |
+| `VCC` | `3V3` |
+| `SCL` | `D22` / GPIO 22 |
+| `SDA` | `D21` / GPIO 21 |
 
-Use the labels printed on the modules. The physical order of OLED pins can vary. Connect VCC to `3V3`, not `VIN`.
+Important:
 
-## Arduino libraries
+- Follow the labels printed on the OLED; modules use different physical pin orders.
+- Connect `VCC` to `3V3`, not `VIN`.
+- `SCL` and `SDA` must not be swapped.
 
-Install these libraries through **Arduino IDE → Tools → Manage Libraries**:
+### Install Arduino libraries
+
+In **Arduino IDE → Tools → Manage Libraries**, install:
 
 1. **Adafruit GFX Library** by Adafruit
 2. **Adafruit SSD1306** by Adafruit
 
-When Arduino IDE offers to install dependencies, choose **Install All**.
+Choose **Install All** if Arduino IDE asks about dependencies.
 
-## Upload the firmware
+### Upload the firmware
 
 1. Open `firmware/codex_usage_monitor/codex_usage_monitor.ino`.
-2. Select your ESP32 board and its COM port.
-3. Upload the sketch.
-4. The OLED should show `WAITING FOR PC`.
+2. Select your ESP32 board.
+3. Select its COM port under **Tools → Port**.
+4. Upload the sketch.
 
-For diagnostics, open Serial Monitor at 115200 baud. A working display reports `OLED detected at 0x3C` or `OLED detected at 0x3D`.
+Success looks like `WAITING FOR PC` on the OLED.
 
-## Configure the Windows helper
+For diagnostics, open Serial Monitor at **115200 baud**. A detected display reports:
 
-1. Find the ESP32 port under **Arduino IDE → Tools → Port**.
-2. Open `start_monitor.cmd` in Notepad.
-3. Set `COM_PORT` to that port, for example:
+```text
+OLED detected at 0x3C
+```
 
-   ```bat
-   set "COM_PORT=COM6"
-   ```
+or:
 
-4. Close Serial Monitor before starting the helper. Only one application can normally use the port at a time.
+```text
+OLED detected at 0x3D
+```
 
-## Test with demo data
+Close Serial Monitor before continuing; it otherwise keeps the COM port busy.
 
-1. Set `DEMO_MODE=1` in `start_monitor.cmd`.
-2. Double-click `start_monitor.cmd`.
-3. Confirm that the OLED displays the 0%, 50%, and 100% examples.
-4. Press a key after the successful demo message.
+### Connect the module
 
-## Start live monitoring
+1. Open QuotaGlow.
+2. Choose the ESP32 port from the COM-port list.
+3. If it is missing, click **Scan**.
+4. Click **Connect Module**.
 
-1. Set `DEMO_MODE=0`.
-2. Confirm Codex is installed and signed in.
-3. Double-click `start_monitor.cmd`.
-4. Leave the helper window open.
+The OLED should immediately display the same limits as the desktop widget. QuotaGlow continues working if the module is later disconnected.
 
-The helper automatically locates the Codex desktop executable. It reads usage once per minute and sends only percentages, window labels, reset countdowns, and the allowed/blocked state over USB.
+## Part 3: Optional hardware demo
 
-Stop the monitor by pressing **Ctrl+C** in the helper window.
+Use the legacy helper to verify serial communication without reading Codex:
+
+1. Open `start_monitor.cmd` in Notepad.
+2. Set `COM_PORT` to the ESP32 port.
+3. Set `DEMO_MODE=1`.
+4. Save and double-click `start_monitor.cmd`.
+
+The OLED cycles through 0%, 50%, and 100% examples. Return `DEMO_MODE` to `0` afterward.
+
+## Start with Windows
+
+Enable **Start with Windows** inside the expanded widget. QuotaGlow creates a current-user startup entry; administrator access is not required.
+
+To disable automatic launch, clear the same checkbox.
+
+## Updating QuotaGlow
+
+If installed with Git:
+
+```powershell
+git switch main
+git pull
+```
+
+If installed from a ZIP, download and extract the new release. Preserve no credentials—QuotaGlow stores only non-sensitive UI settings separately in `%LOCALAPPDATA%\QuotaGlow`.
+
+After an update that changes firmware behavior, upload the latest `.ino` file again.

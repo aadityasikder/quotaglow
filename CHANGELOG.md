@@ -4,6 +4,17 @@ All notable changes to QuotaGlow are documented here.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-10-04
+
+### Added
+
+- ESP32 captive-portal Wi-Fi provisioning, UDP discovery, pairing, and local HTTP API.
+- Widget USB/Wi-Fi selection, manual-IP fallback, encrypted token storage, and bounded reconnection.
+- Five-second BOOT-button reset for network and pairing data.
+- Added single-instance protection, existing-window activation, and a verified force-stop launcher.
+
+USB, desktop-only, and demo modes remain backward compatible. Bluetooth LE is deferred.
+
 ## [1.1.0] - 2026-10-03
 
 ### Added
@@ -34,5 +45,6 @@ The project follows [Semantic Versioning](https://semver.org/).
 - Five-hour and weekly remaining percentages and reset countdowns.
 - Demo mode, stale-data handling, and USB serial protocol.
 
+[1.2.0]: https://github.com/aadityasikder/quotaglow/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/aadityasikder/quotaglow/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aadityasikder/quotaglow/releases/tag/v1.0.0

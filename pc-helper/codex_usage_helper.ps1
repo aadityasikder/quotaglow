@@ -9,7 +9,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot 'QuotaGlow.Core.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'QuotaGlow.Core.psm1') -Force -DisableNameChecking
 $appServer = $null
 $serialPort = $null
 

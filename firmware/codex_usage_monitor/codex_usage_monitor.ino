@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include "QuotaGlowNetwork.h"
 
 constexpr int SCREEN_WIDTH = 128;
 constexpr int SCREEN_HEIGHT = 64;
@@ -65,7 +66,7 @@ void drawProgressBar(int x, int y, int width, int height, int percent) {
 }
 
 void drawCenteredMessage(const String &line1, const String &line2 = "") {
-  if (!displayPowered) return;
+  if (!displayReady || !displayPowered) return;
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
   display.setTextSize(1);
@@ -209,6 +210,14 @@ void handleSerialLine(String line) {
   }
 }
 
+void handleNetworkLine(String line) {
+  handleSerialLine(line);
+}
+
+void showNetworkMessage(const String &line1, const String &line2) {
+  drawCenteredMessage(line1, line2);
+}
+
 bool beginDisplay() {
   const uint8_t addresses[] = {0x3C, 0x3D};
   for (uint8_t address : addresses) {
@@ -234,16 +243,17 @@ void setup() {
   displayReady = beginDisplay();
   if (!displayReady) {
     Serial.println("OLED not found at 0x3C or 0x3D");
-    return;
+  } else {
+    display.clearDisplay();
+    display.display();
+    drawCenteredMessage("WAITING FOR PC", "USB 115200 baud");
   }
-
-  display.clearDisplay();
-  display.display();
-  drawCenteredMessage("WAITING FOR PC", "USB 115200 baud");
   Serial.println("Waiting for usage data from PC");
+  beginQuotaGlowNetwork(handleNetworkLine, showNetworkMessage);
 }
 
 void loop() {
+  loopQuotaGlowNetwork();
   while (Serial.available() > 0) {
     char incoming = static_cast<char>(Serial.read());
     if (incoming == '\n') {

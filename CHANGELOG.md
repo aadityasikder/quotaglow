@@ -11,6 +11,7 @@ The project follows [Semantic Versioning](https://semver.org/).
 - ESP32 captive-portal Wi-Fi provisioning, UDP discovery, pairing, and local HTTP API.
 - Widget USB/Wi-Fi selection, manual-IP fallback, encrypted token storage, and bounded reconnection.
 - Five-second BOOT-button reset for network and pairing data.
+- Added single-instance protection, existing-window activation, and a verified force-stop launcher.
 
 USB, desktop-only, and demo modes remain backward compatible. Bluetooth LE is deferred.
 

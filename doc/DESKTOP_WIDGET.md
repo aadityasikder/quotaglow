@@ -14,6 +14,8 @@ start_quotaglow.vbs
 
 The VBS launcher starts PowerShell invisibly, so no terminal window remains beside the widget. `start_quotaglow.cmd` remains as a compatibility launcher and immediately hands off to the silent VBS launcher.
 
+Only one QuotaGlow widget can run per Windows user. Launching it again activates the existing window. `stop_quotaglow.cmd` requests a clean shutdown and then closes any verified older or unresponsive QuotaGlow instances.
+
 The first reading can take several seconds while the local Codex service starts.
 
 ## Controls

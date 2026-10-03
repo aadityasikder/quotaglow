@@ -3,12 +3,13 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $corePath = Join-Path $projectRoot 'pc-helper\QuotaGlow.Core.psm1'
 $widgetPath = Join-Path $projectRoot 'desktop-widget\QuotaGlow.ps1'
 $helperPath = Join-Path $projectRoot 'pc-helper\codex_usage_helper.ps1'
+$stopperPath = Join-Path $projectRoot 'desktop-widget\Stop-QuotaGlow.ps1'
 
 function Assert-Equal($Actual, $Expected, [string]$Message) {
     if ($Actual -ne $Expected) { throw "$Message Expected '$Expected', received '$Actual'." }
 }
 
-foreach ($path in @($corePath, $widgetPath, $helperPath)) {
+foreach ($path in @($corePath, $widgetPath, $helperPath, $stopperPath)) {
     $tokens = $null
     $errors = $null
     [void][System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors)

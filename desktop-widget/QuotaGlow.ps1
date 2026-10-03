@@ -2,6 +2,26 @@
 param([int]$RefreshSeconds = 60, [switch]$ValidateOnly)
 
 $ErrorActionPreference = 'Stop'
+$script:InstanceMutex = $null
+$script:ActivateEvent = $null
+$script:StopEvent = $null
+
+if (-not $ValidateOnly) {
+    $createdNew = $false
+    $script:InstanceMutex = [System.Threading.Mutex]::new($true, 'Local\QuotaGlow.Widget.Singleton', [ref]$createdNew)
+    if (-not $createdNew) {
+        try {
+            $activateExisting = [System.Threading.EventWaitHandle]::OpenExisting('Local\QuotaGlow.Widget.Activate')
+            [void]$activateExisting.Set()
+            $activateExisting.Dispose()
+        } catch {}
+        $script:InstanceMutex.Dispose()
+        return
+    }
+    $script:ActivateEvent = [System.Threading.EventWaitHandle]::new($false, [System.Threading.EventResetMode]::AutoReset, 'Local\QuotaGlow.Widget.Activate')
+    $script:StopEvent = [System.Threading.EventWaitHandle]::new($false, [System.Threading.EventResetMode]::AutoReset, 'Local\QuotaGlow.Widget.Stop')
+}
+
 $script:WidgetScriptPath = $PSCommandPath
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $coreModule = Join-Path $projectRoot 'pc-helper\QuotaGlow.Core.psm1'
@@ -11,6 +31,7 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
 
 $settingsDirectory = Join-Path $env:LOCALAPPDATA 'QuotaGlow'
 $settingsPath = Join-Path $settingsDirectory 'settings.json'
+$pidPath = Join-Path $settingsDirectory 'widget.pid'
 $startupRegistryPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $startupName = 'QuotaGlow'
 $script:ModuleConnected = $false
@@ -151,6 +172,9 @@ if ($ValidateOnly) {
     Write-Output "QuotaGlow widget XAML: OK ($($names.Count) named controls)"
     return
 }
+
+if (-not (Test-Path -LiteralPath $settingsDirectory)) { [void](New-Item -ItemType Directory -Path $settingsDirectory -Force) }
+Set-Content -LiteralPath $pidPath -Value $PID -Encoding ASCII
 
 function Set-WidgetMessage([string]$Text, [string]$Color = '#AEB6C8', [string]$Header = 'Live') {
     $MessageText.Text = $Text
@@ -297,6 +321,12 @@ $moduleHandle = $moduleWorker.BeginInvoke()
 $uiTimer = [Windows.Threading.DispatcherTimer]::new()
 $uiTimer.Interval = [TimeSpan]::FromMilliseconds(250)
 $uiTimer.Add_Tick({
+    if ($script:ActivateEvent.WaitOne(0)) {
+        if ($Window.WindowState -eq 'Minimized') { $Window.WindowState = 'Normal' }
+        $Window.Topmost = $false; $Window.Topmost = $true
+        [void]$Window.Activate()
+    }
+    if ($script:StopEvent.WaitOne(0)) { $Window.Close(); return }
     $eventItem = $null
     while ($events.TryDequeue([ref]$eventItem)) {
         if ($eventItem.Type -eq 'Snapshot') { Update-WidgetSnapshot $eventItem.Data }
@@ -367,6 +397,11 @@ $Window.Add_Closing({
     $worker.Dispose()
     try { if($moduleHandle.AsyncWaitHandle.WaitOne(2500)){[void]$moduleWorker.EndInvoke($moduleHandle)}else{$moduleWorker.Stop()} } catch {}
     $moduleWorker.Dispose()
+    try { if((Test-Path -LiteralPath $pidPath) -and ([int](Get-Content -Raw -LiteralPath $pidPath)) -eq $PID){Remove-Item -LiteralPath $pidPath -Force} } catch {}
+    try { $script:ActivateEvent.Dispose() } catch {}
+    try { $script:StopEvent.Dispose() } catch {}
+    try { $script:InstanceMutex.ReleaseMutex() } catch {}
+    try { $script:InstanceMutex.Dispose() } catch {}
 })
 
 Refresh-PortList

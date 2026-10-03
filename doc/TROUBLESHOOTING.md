@@ -1,5 +1,9 @@
 # Troubleshooting
 
+## Multiple widgets are already open
+
+Double-click `stop_quotaglow.cmd`. It closes responsive widgets normally, then force-stops remaining processes only when their command line identifies the QuotaGlow widget. Start QuotaGlow again afterward. New versions prevent a second instance and bring the existing widget forward instead.
+
 ## Wi-Fi setup network does not appear
 
 Hold **BOOT** for five seconds to clear network data. Confirm v1.2 firmware is uploaded, then restart the ESP32.

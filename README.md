@@ -63,6 +63,8 @@ QuotaGlow shows your Codex usage in a small always-on-top Windows widget. With a
 
 The VBS launcher intentionally starts QuotaGlow without a PowerShell terminal window. The widget works even when no ESP32 is attached.
 
+QuotaGlow allows only one widget instance. Opening `start_quotaglow.cmd` or `start_quotaglow.vbs` again brings the existing widget forward instead of creating another copy. To close all current or older stuck instances, double-click `stop_quotaglow.cmd`.
+
 ## Optional ESP32 OLED
 
 ### 1. Wire the display
@@ -129,6 +131,8 @@ See the [Wi-Fi setup guide](doc/WIFI_SETUP.md) for complete instructions and saf
 | **Pause Monitoring** | Stops polling, disconnects the module, and darkens the OLED |
 | **Start with Windows** | Adds or removes a current-user startup entry |
 | **X** | Closes QuotaGlow and darkens a connected OLED |
+
+If the widget does not respond to **X**, run `stop_quotaglow.cmd`. It first requests a normal shutdown and then force-stops only processes whose command line is verified as the QuotaGlow widget.
 
 Settings are saved in `%LOCALAPPDATA%\QuotaGlow\settings.json`. This file contains UI preferences only—not credentials or account IDs.
 

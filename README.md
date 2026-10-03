@@ -7,7 +7,7 @@
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4.svg)](#requirements)
 [![Hardware: Optional](https://img.shields.io/badge/ESP32-optional-65d6ad.svg)](#optional-esp32-oled)
 
-QuotaGlow shows your Codex 5-hour and weekly usage windows, reset countdowns, and last refresh time in a small always-on-top Windows widget. It works without hardware. If you have an ESP32 and a 0.96-inch OLED, QuotaGlow can mirror the same information to a physical desk display over USB.
+QuotaGlow shows your Codex usage in a small always-on-top Windows widget. With an ESP32 and OLED, it can mirror the same information over USB or trusted local Wi-Fi.
 
 ## Features
 
@@ -17,6 +17,8 @@ QuotaGlow shows your Codex 5-hour and weekly usage windows, reset countdowns, an
 - Full and compact draggable widget modes
 - Optional start with Windows
 - Optional ESP32 + SSD1306 OLED display
+- USB or wireless local-network module connection
+- Browser-based Wi-Fi setup and six-digit pairing
 - Module connect/disconnect and OLED sleep controls
 - No API key copied into the project or firmware
 - No Python, Node.js, npm, or installer required
@@ -26,7 +28,7 @@ QuotaGlow shows your Codex 5-hour and weekly usage windows, reset countdowns, an
 | Setup | What you need | Recommended for |
 |---|---|---|
 | Desktop widget only | Windows and Codex desktop/CLI | Fastest setup; no electronics required |
-| Desktop widget + OLED | Above, plus ESP32 and SSD1306 OLED | A physical always-visible desk monitor |
+| Desktop widget + OLED | Above, plus ESP32 and SSD1306 OLED | A USB or wireless desk monitor |
 | Legacy command helper | Windows, Codex, and optional ESP32 | Diagnostics and protocol testing |
 
 ## Requirements
@@ -95,7 +97,7 @@ firmware/codex_usage_monitor/codex_usage_monitor.ino
 
 The OLED should show `WAITING FOR PC`. The firmware automatically detects addresses `0x3C` and `0x3D`.
 
-### 4. Connect from QuotaGlow
+### 4. Connect over USB
 
 1. Close Arduino Serial Monitor so it releases the COM port.
 2. Open QuotaGlow with `start_quotaglow.vbs`.
@@ -104,13 +106,24 @@ The OLED should show `WAITING FOR PC`. The firmware automatically detects addres
 
 The OLED immediately receives the latest values and follows future refreshes. Disconnecting the module does not stop the desktop widget.
 
+### Or connect over Wi-Fi
+
+1. Join the ESP32's temporary `QuotaGlow-Setup-XXXX` network.
+2. Open `http://192.168.4.1` and enter your trusted 2.4 GHz Wi-Fi details.
+3. In the widget choose **Wi-Fi**, select **Rescan**, and choose the module. If discovery is blocked, enter the IP shown on the OLED.
+4. Enter the six-digit OLED code and select **Pair**.
+
+See the [Wi-Fi setup guide](doc/WIFI_SETUP.md) for complete instructions and safety notes.
+
 ## Widget controls
 
 | Control | Behavior |
 |---|---|
 | **Refresh** | Requests a new reading immediately |
 | **- / +** | Switches between full and compact mode |
-| **Scan** | Refreshes the COM-port list |
+| **USB / Wi-Fi** | Selects the module transport |
+| **Rescan** | Refreshes COM ports or discovers Wi-Fi modules |
+| **Pair / Forget** | Pairs with or removes a saved Wi-Fi module |
 | **Connect Module** | Opens the selected ESP32 serial port |
 | **Disconnect Module** | Stops OLED mirroring while desktop monitoring continues |
 | **Pause Monitoring** | Stops polling, disconnects the module, and darkens the OLED |
@@ -126,6 +139,8 @@ Settings are saved in `%LOCALAPPDATA%\QuotaGlow\settings.json`. This file contai
 - [Troubleshooting](doc/TROUBLESHOOTING.md)
 - [Architecture and security model](doc/ARCHITECTURE.md)
 - [USB serial protocol](doc/SERIAL_PROTOCOL.md)
+- [Wi-Fi setup and pairing](doc/WIFI_SETUP.md)
+- [Wi-Fi discovery and local API](doc/WIFI_API.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
@@ -142,7 +157,7 @@ The checks validate PowerShell syntax, usage conversion, widget XAML, serial out
 
 ## Privacy and security
 
-QuotaGlow uses the locally installed Codex app-server and your existing Codex sign-in. It does not place your password, access token, API key, or account ID in the repository, settings file, or ESP32 firmware. Only display-ready percentages, duration labels, reset countdowns, and allowed/blocked state are sent over USB.
+QuotaGlow uses the locally installed Codex app-server and your existing Codex sign-in. It does not place your password, access token, API key, or account ID in the repository, settings file, or ESP32 firmware. Only display-ready values are sent to the module. Wi-Fi uses authenticated HTTP rather than HTTPS, so use it only on a trusted private network.
 
 The Codex rate-limit interface used by QuotaGlow is experimental and may require updates after a future Codex release.
 
@@ -150,7 +165,7 @@ The Codex rate-limit interface used by QuotaGlow is experimental and may require
 
 - The desktop widget currently supports Windows only.
 - The computer must remain running for live updates.
-- ESP32 communication currently uses USB serial, not Wi-Fi.
+- Wi-Fi is local-LAN only; there is no cloud relay or remote module access.
 - The firmware targets 128×64 SSD1306-compatible I²C displays.
 
 ## Contributing

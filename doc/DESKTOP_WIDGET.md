@@ -1,5 +1,7 @@
 # Floating Desktop Widget
 
+The module selector supports **USB** and **Wi-Fi**. Wi-Fi mode provides discovery, manual IP entry, six-digit pairing, forgetting a device, and automatic reconnection. Module work runs in the background, so an offline ESP32 does not freeze or stop Codex refreshes.
+
 QuotaGlow includes a compact Windows widget that works with or without the ESP32 module. It reads Codex usage every 60 seconds and stays above normal windows.
 
 ## Start the widget

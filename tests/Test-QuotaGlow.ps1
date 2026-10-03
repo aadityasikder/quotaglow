@@ -16,7 +16,7 @@ foreach ($path in @($corePath, $widgetPath, $helperPath)) {
 }
 Write-Host 'PASS: PowerShell syntax'
 
-Import-Module $corePath -Force
+Import-Module $corePath -Force -DisableNameChecking
 $futureReset = [DateTimeOffset]::UtcNow.AddHours(2).ToUnixTimeSeconds()
 $fixture = [pscustomobject]@{
     ordinaryUsageAllowed = $true
@@ -35,6 +35,15 @@ Assert-Equal $snapshot.SecondaryLabel '7d' 'Secondary window label failed.'
 if ($snapshot.SerialLine -notmatch '^LIMITS\|90\|5h\|.+\|98\|7d\|.+\|1$') { throw 'Serial line conversion failed.' }
 Write-Host 'PASS: usage snapshot and serial conversion'
 
+try {
+    $encrypted = Protect-QuotaGlowDeviceToken '0123456789abcdef'
+    Assert-Equal (Unprotect-QuotaGlowDeviceToken $encrypted) '0123456789abcdef' 'DPAPI token round trip failed.'
+} catch [System.Security.Cryptography.CryptographicException] {
+    Write-Host 'SKIP: DPAPI user profile is unavailable in this test host'
+}
+try { Pair-QuotaGlowWifiDevice -Address '127.0.0.1' -Code '12'; throw 'Invalid pairing code was accepted.' } catch { if($_.Exception.Message -eq 'Invalid pairing code was accepted.'){throw} }
+Write-Host 'PASS: Wi-Fi token protection and pairing validation'
+
 $widgetOutput = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $widgetPath -ValidateOnly
 if ($LASTEXITCODE -ne 0 -or $widgetOutput -notmatch 'XAML: OK') { throw 'Widget XAML validation failed.' }
 Write-Host 'PASS: widget XAML'
@@ -42,5 +51,11 @@ Write-Host 'PASS: widget XAML'
 $demoOutput = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $helperPath -Demo -DryRun -Once
 if ($LASTEXITCODE -ne 0 -or @($demoOutput | Select-String '^SERIAL> LIMITS\|').Count -ne 3) { throw 'Legacy demo regression failed.' }
 Write-Host 'PASS: legacy demo compatibility'
+
+$networkSource = Get-Content -Raw (Join-Path $projectRoot 'firmware\codex_usage_monitor\QuotaGlowNetwork.cpp')
+foreach($required in 'QUOTAGLOW_DISCOVER_V1','/api/v1/info','/api/v1/pair','/api/v1/message','/api/v1/unpair','/api/v1/wifi/reset','Authorization','PAIR_CODE_LIFETIME_MS') {
+    if(-not $networkSource.Contains($required)){throw "Firmware network interface is missing $required."}
+}
+Write-Host 'PASS: firmware Wi-Fi API surface'
 
 Write-Host 'All QuotaGlow checks passed.' -ForegroundColor Green

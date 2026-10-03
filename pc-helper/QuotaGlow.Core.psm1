@@ -76,7 +76,7 @@ function Start-QuotaGlowAppServer {
             clientInfo = [ordered]@{
                 name = 'quotaglow'
                 title = 'QuotaGlow'
-                version = '1.1.0'
+                version = '1.2.0'
             }
             capabilities = [ordered]@{ experimentalApi = $true }
         }
@@ -215,4 +215,112 @@ function Close-QuotaGlowSerialPort {
     try { $SerialPort.Dispose() } catch {}
 }
 
-Export-ModuleMember -Function Find-QuotaGlowCodexExecutable, Start-QuotaGlowAppServer, Stop-QuotaGlowAppServer, Get-QuotaGlowUsageSnapshot, ConvertTo-QuotaGlowSnapshot, Get-QuotaGlowSerialPorts, Open-QuotaGlowSerialPort, Send-QuotaGlowSerialLine, Close-QuotaGlowSerialPort
+function Get-QuotaGlowWifiBaseUri {
+    param([Parameter(Mandatory)][string]$Address)
+    $clean = $Address.Trim().TrimEnd('/')
+    if ($clean -notmatch '^https?://') { $clean = "http://$clean" }
+    return $clean
+}
+
+function Invoke-QuotaGlowWifiRequest {
+    param(
+        [Parameter(Mandatory)][string]$Address,
+        [Parameter(Mandatory)][string]$Path,
+        [ValidateSet('GET','POST')][string]$Method = 'GET',
+        [string]$Token,
+        [string]$Body = ''
+    )
+    $headers = @{}
+    if (-not [string]::IsNullOrWhiteSpace($Token)) { $headers.Authorization = "Bearer $Token" }
+    $uri = (Get-QuotaGlowWifiBaseUri $Address) + $Path
+    if ($Method -eq 'GET') {
+        return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers -TimeoutSec 3 -UseBasicParsing
+    }
+    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $Body -ContentType 'text/plain' -TimeoutSec 3 -UseBasicParsing
+}
+
+function Find-QuotaGlowWifiDevices {
+    param([ValidateRange(250,5000)][int]$TimeoutMs = 1500)
+    $client = [System.Net.Sockets.UdpClient]::new()
+    $devices = @{}
+    try {
+        $client.EnableBroadcast = $true
+        $client.Client.ReceiveTimeout = 150
+        $request = [Text.Encoding]::ASCII.GetBytes('QUOTAGLOW_DISCOVER_V1')
+        $endpoint = [System.Net.IPEndPoint]::new([System.Net.IPAddress]::Broadcast, 4210)
+        [void]$client.Send($request, $request.Length, $endpoint)
+        $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMs)
+        while ([DateTime]::UtcNow -lt $deadline) {
+            try {
+                $remote = [System.Net.IPEndPoint]::new([System.Net.IPAddress]::Any, 0)
+                $bytes = $client.Receive([ref]$remote)
+                $payload = [Text.Encoding]::UTF8.GetString($bytes) | ConvertFrom-Json
+                if ($null -ne $payload.deviceId -and $null -ne $payload.ip) {
+                    $devices[[string]$payload.deviceId] = [pscustomobject]@{
+                        DeviceId = [string]$payload.deviceId
+                        Name = [string]$payload.name
+                        Address = [string]$payload.ip
+                        Port = if ($null -ne $payload.port) { [int]$payload.port } else { 80 }
+                        FirmwareVersion = [string]$payload.firmwareVersion
+                        Paired = [bool]$payload.paired
+                    }
+                }
+            } catch [System.Net.Sockets.SocketException] {
+                if ($_.Exception.SocketErrorCode -ne 'TimedOut') { throw }
+            } catch {
+                # Ignore malformed discovery replies from unrelated devices.
+            }
+        }
+    } finally { $client.Dispose() }
+    return @($devices.Values | Sort-Object Name)
+}
+
+function Get-QuotaGlowWifiInfo {
+    param([Parameter(Mandatory)][string]$Address)
+    return Invoke-QuotaGlowWifiRequest -Address $Address -Path '/api/v1/info'
+}
+
+function Pair-QuotaGlowWifiDevice {
+    param([Parameter(Mandatory)][string]$Address, [Parameter(Mandatory)][string]$Code)
+    if ($Code -notmatch '^\d{6}$') { throw 'Enter the six-digit code shown on the OLED.' }
+    return Invoke-QuotaGlowWifiRequest -Address $Address -Path '/api/v1/pair' -Method POST -Body $Code
+}
+
+function Send-QuotaGlowWifiLine {
+    param([Parameter(Mandatory)][string]$Address, [Parameter(Mandatory)][string]$Token, [Parameter(Mandatory)][string]$Line)
+    if ($Line.Contains("`r") -or $Line.Contains("`n") -or $Line.Length -gt 160) { throw 'Invalid Wi-Fi module message.' }
+    return Invoke-QuotaGlowWifiRequest -Address $Address -Path '/api/v1/message' -Method POST -Token $Token -Body $Line
+}
+
+function Unpair-QuotaGlowWifiDevice {
+    param([Parameter(Mandatory)][string]$Address, [Parameter(Mandatory)][string]$Token)
+    return Invoke-QuotaGlowWifiRequest -Address $Address -Path '/api/v1/unpair' -Method POST -Token $Token
+}
+
+function Reset-QuotaGlowWifiDevice {
+    param([Parameter(Mandatory)][string]$Address, [Parameter(Mandatory)][string]$Token)
+    return Invoke-QuotaGlowWifiRequest -Address $Address -Path '/api/v1/wifi/reset' -Method POST -Token $Token
+}
+
+function Protect-QuotaGlowDeviceToken {
+    param([Parameter(Mandatory)][string]$Token)
+    Add-Type -AssemblyName System.Security
+    $plain = [Text.Encoding]::UTF8.GetBytes($Token)
+    $entropy = [Text.Encoding]::UTF8.GetBytes('QuotaGlowDeviceTokenV1')
+    $protected = [Security.Cryptography.ProtectedData]::Protect($plain, $entropy, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+    return [Convert]::ToBase64String($protected)
+}
+
+function Unprotect-QuotaGlowDeviceToken {
+    param([string]$EncryptedToken)
+    if ([string]::IsNullOrWhiteSpace($EncryptedToken)) { return '' }
+    try {
+        Add-Type -AssemblyName System.Security
+        $protected = [Convert]::FromBase64String($EncryptedToken)
+        $entropy = [Text.Encoding]::UTF8.GetBytes('QuotaGlowDeviceTokenV1')
+        $plain = [Security.Cryptography.ProtectedData]::Unprotect($protected, $entropy, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+        return [Text.Encoding]::UTF8.GetString($plain)
+    } catch { return '' }
+}
+
+Export-ModuleMember -Function Find-QuotaGlowCodexExecutable, Start-QuotaGlowAppServer, Stop-QuotaGlowAppServer, Get-QuotaGlowUsageSnapshot, ConvertTo-QuotaGlowSnapshot, Get-QuotaGlowSerialPorts, Open-QuotaGlowSerialPort, Send-QuotaGlowSerialLine, Close-QuotaGlowSerialPort, Find-QuotaGlowWifiDevices, Get-QuotaGlowWifiInfo, Pair-QuotaGlowWifiDevice, Send-QuotaGlowWifiLine, Unpair-QuotaGlowWifiDevice, Reset-QuotaGlowWifiDevice, Protect-QuotaGlowDeviceToken, Unprotect-QuotaGlowDeviceToken

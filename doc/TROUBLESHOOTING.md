@@ -1,5 +1,25 @@
 # Troubleshooting
 
+## Wi-Fi setup network does not appear
+
+Hold **BOOT** for five seconds to clear network data. Confirm v1.2 firmware is uploaded, then restart the ESP32.
+
+## Captive portal does not open
+
+Stay connected to `QuotaGlow-Setup-XXXX` despite any no-internet warning, then open `http://192.168.4.1` manually.
+
+## Rescan finds no module
+
+Confirm both devices are on the same private network and Windows Firewall permits local UDP. Enter the IP shown on the OLED if discovery is blocked.
+
+## Pairing fails
+
+Use the current OLED code. Codes expire after ten minutes and repeated failures are rate-limited. Restart the module for a new code.
+
+## Wi-Fi details changed
+
+Hold **BOOT** for five seconds and provision again. USB remains usable during Wi-Fi problems.
+
 ## OLED is completely blank
 
 1. Disconnect USB.

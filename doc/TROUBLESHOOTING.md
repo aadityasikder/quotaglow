@@ -38,9 +38,13 @@ Install **Adafruit GFX Library by Adafruit** through Arduino IDE's Library Manag
 
 ## Widget does not open
 
-- Run `start_quotaglow.cmd` again and wait several seconds.
+- Run `start_quotaglow.vbs` again and wait several seconds.
 - Confirm Windows PowerShell is enabled.
 - From PowerShell, run `desktop-widget\QuotaGlow.ps1` without the hidden launcher to see an error message.
+
+## A PowerShell terminal appears with the widget
+
+Launch with `start_quotaglow.vbs`, not the `.ps1` file. The VBS launcher starts the widget invisibly. The `.ps1` file should only be run directly when troubleshooting.
 
 ## Widget shows a Codex error
 

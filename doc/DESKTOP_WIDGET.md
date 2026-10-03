@@ -7,14 +7,18 @@ QuotaGlow includes a compact Windows widget that works with or without the ESP32
 Double-click:
 
 ```text
-start_quotaglow.cmd
+start_quotaglow.vbs
 ```
 
-The launcher starts PowerShell without a visible console. The first reading can take several seconds while the local Codex service starts.
+The VBS launcher starts PowerShell invisibly, so no terminal window remains beside the widget. `start_quotaglow.cmd` remains as a compatibility launcher and immediately hands off to the silent VBS launcher.
+
+The first reading can take several seconds while the local Codex service starts.
 
 ## Controls
 
 - **Refresh** requests a new reading immediately. Repeated clicks do not create overlapping requests.
+- **-** collapses the full card into a short rounded usage bar.
+- **+** restores the full controls from compact mode.
 - **COM port** selects the optional ESP32 module.
 - **Rescan** updates the list of available COM ports.
 - **Connect Module** opens the selected port and sends the latest values to the OLED.
@@ -24,7 +28,9 @@ The launcher starts PowerShell without a visible console. The first reading can 
 - **Start with Windows** adds or removes a current-user startup entry. Administrator access is not required.
 - **×** closes QuotaGlow, stops its local Codex service, and darkens a connected OLED.
 
-Drag the title area to move the widget. Its position is restored on the next launch. If a saved position is no longer visible after monitor changes, QuotaGlow opens in the center of the primary screen.
+Compact mode shows only the connection indicator and the 5-hour and 7-day remaining percentages. Monitoring and optional OLED updates continue normally while compact.
+
+Drag the title area—or the empty portion of the compact bar—to move the widget. Its position and compact/expanded state are restored on the next launch. If a saved position is no longer visible after monitor changes, QuotaGlow opens in the center of the primary screen.
 
 ## Status colors
 

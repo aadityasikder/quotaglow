@@ -64,7 +64,7 @@ For diagnostics, open Serial Monitor at 115200 baud. A working display reports `
 
 ### Recommended: floating widget
 
-1. Double-click `start_quotaglow.cmd`.
+1. Double-click `start_quotaglow.vbs` for a terminal-free launch.
 2. Wait for the first desktop reading.
 3. To use the OLED, select its COM port and choose **Connect Module**.
 4. Optionally enable **Start with Windows**.

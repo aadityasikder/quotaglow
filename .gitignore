@@ -1,0 +1,27 @@
+# Arduino build output
+build/
+*.bin
+*.elf
+*.hex
+*.map
+
+# Arduino IDE and editor-local files
+.vscode/
+.idea/
+*.code-workspace
+
+# Windows files
+Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*~
+
+# Never commit local credentials if they are added while experimenting
+.env
+*.key
+*.token
+credentials.json

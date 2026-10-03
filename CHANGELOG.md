@@ -4,7 +4,7 @@ All notable changes to QuotaGlow are documented here.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
-## [1.2.0] - Pending hardware validation
+## [1.2.0] - 2026-10-04
 
 ### Added
 
@@ -45,5 +45,6 @@ USB, desktop-only, and demo modes remain backward compatible. Bluetooth LE is de
 - Five-hour and weekly remaining percentages and reset countdowns.
 - Demo mode, stale-data handling, and USB serial protocol.
 
+[1.2.0]: https://github.com/aadityasikder/quotaglow/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/aadityasikder/quotaglow/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aadityasikder/quotaglow/releases/tag/v1.0.0

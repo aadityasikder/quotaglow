@@ -1,5 +1,9 @@
 # Troubleshooting
 
+## TTP223 touch sensor does not react
+
+Wire `VCC` to `3V3`, `GND` to `GND`, and `OUT` to GPIO 27. Do not use 5V or VIN. See [DESK_COMPANION.md](DESK_COMPANION.md) for gesture and wiring troubleshooting.
+
 ## Multiple widgets are already open
 
 Double-click `stop_quotaglow.cmd`. It closes responsive widgets normally, then force-stops remaining processes only when their command line identifies the QuotaGlow widget. Start QuotaGlow again afterward. New versions prevent a second instance and bring the existing widget forward instead.

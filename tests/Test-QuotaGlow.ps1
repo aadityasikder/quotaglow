@@ -59,4 +59,10 @@ foreach($required in 'QUOTAGLOW_DISCOVER_V1','/api/v1/info','/api/v1/pair','/api
 }
 Write-Host 'PASS: firmware Wi-Fi API surface'
 
+$firmwareSource = Get-Content -Raw (Join-Path $projectRoot 'firmware\codex_usage_monitor\codex_usage_monitor.ino')
+foreach($required in 'TOUCH_PIN = 27','updateTouch()','toggleCompanionMode()','drawCompanionFace','companionPreferences.begin','PET_REACTION_MS') {
+    if(-not $firmwareSource.Contains($required)){throw "Desk companion firmware is missing $required."}
+}
+Write-Host 'PASS: desk companion firmware surface'
+
 Write-Host 'All QuotaGlow checks passed.' -ForegroundColor Green

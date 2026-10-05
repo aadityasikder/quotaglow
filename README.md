@@ -19,6 +19,7 @@ QuotaGlow is an expandable ESP32 desk companion. Its OLED can show an animated f
 - Optional ESP32 + SSD1306 OLED display
 - Optional TTP223 touch sensor for an animated desk companion
 - Optional DHT11 or DHT22 room temperature and humidity sensor
+- Optional LDR ambient-light sensor with automatic OLED brightness
 - Touch-controlled OLED menu with fixed and rotating display modes
 - USB or wireless local-network module connection
 - Browser-based Wi-Fi setup and six-digit pairing
@@ -147,6 +148,20 @@ The firmware defaults to the DHT11 used by the current reference build. Connect 
 
 A bare four-pin sensor needs a 4.7–10 kΩ pull-up resistor between `DATA` and `3V3`. Most three-pin modules already include one. Use 3.3V, not 5V. DHT22 owners can change `DHT_TYPE` from `DHT11` to `DHT22` before uploading.
 
+### Add ambient awareness
+
+Create an LDR voltage divider on GPIO 34:
+
+```text
+3V3 ── LDR ──┬── GPIO 34
+             │
+          10 kΩ
+             │
+            GND
+```
+
+GPIO 34 is an ADC1 input, so it works while Wi-Fi is active. The LDR enables automatic OLED brightness, a sleepy dark-room face, touch-to-wake, sudden-light reactions, and an Ambient Light screen. Use **Calibrate Light** in the touch menu after wiring it. See [Ambient awareness](doc/AMBIENT_LIGHT.md).
+
 Hold the touch sensor for 1.2 seconds to open the OLED menu. Tap to move and hold to select **Companion**, **Codex Usage**, **Room Climate**, **Auto Rotate**, or **Wi-Fi Pairing**. See the [room climate and OLED menu guide](doc/ROOM_CLIMATE.md).
 
 ## Widget controls
@@ -179,6 +194,7 @@ Settings are saved in `%LOCALAPPDATA%\QuotaGlow\settings.json`. This file contai
 - [Wi-Fi discovery and local API](doc/WIFI_API.md)
 - [Desk companion guide](doc/DESK_COMPANION.md)
 - [Room climate and OLED menu](doc/ROOM_CLIMATE.md)
+- [Ambient awareness and LDR setup](doc/AMBIENT_LIGHT.md)
 - [Feature roadmap](doc/ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)

@@ -39,7 +39,10 @@ The menu contains:
 - **Companion:** keeps the local animated face visible.
 - **Codex Usage:** keeps the existing usage dashboard visible.
 - **Room Climate:** keeps temperature and humidity visible.
+- **Ambient Light:** shows the calibrated light percentage and current light category.
 - **Auto Rotate:** changes among available screens every eight seconds. It skips Usage without valid usage data and Climate without a valid sensor reading.
+- **Auto Brightness:** enables or disables LDR-controlled OLED contrast.
+- **Calibrate Light:** records dark and bright reference readings.
 - **Wi-Fi Pairing:** shows the current pairing code and IP. If already paired, it shows that state without removing the saved token.
 - **Back:** returns without changing the home mode.
 

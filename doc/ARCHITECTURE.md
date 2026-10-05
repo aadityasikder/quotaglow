@@ -4,7 +4,7 @@ In v1.2 the widget sends display lines through a background transport worker. It
 
 Wi-Fi credentials live only in ESP32 NVS. The device token is stored in ESP32 NVS and encrypted with Windows current-user DPAPI in desktop settings. Discovery exposes only non-sensitive metadata.
 
-The desk companion is firmware-local. GPIO 27 receives TTP223 touch input and GPIO 26 reads the configured DHT11 or DHT22 sensor. The `companion` NVS namespace stores a home-mode enum for Companion, Codex Usage, Room Climate, or Auto Rotate. Existing `faceFirst` values are migrated once. These local features do not add a transport message or desktop setting.
+The desk companion is firmware-local. GPIO 27 receives TTP223 touch input, GPIO 26 reads the configured DHT11 or DHT22 sensor, and ADC1 GPIO 34 samples the LDR divider. The `companion` NVS namespace stores the home mode, auto-brightness preference, and light calibration. Existing `faceFirst` values are migrated once. These local features do not add a transport message or desktop setting.
 
 ## Overview
 
@@ -23,6 +23,7 @@ QuotaGlow PowerShell core ─────► Floating WPF desktop widget
 ESP32 firmware ◄──────── TTP223 touch (GPIO 27)
      ▲
      └────────────────── DHT climate sensor (GPIO 26)
+     └────────────────── LDR divider (ADC1 GPIO 34)
      │ I²C
      ▼
 SSD1306 OLED and local menu
@@ -70,8 +71,10 @@ The firmware:
 - Samples the configured DHT sensor every 2.5 seconds and preserves readings through brief failures.
 - Runs a touch-controlled menu and persists the selected home mode.
 - Rotates only among currently available screens when Auto Rotate is selected.
+- Smooths LDR samples, applies category hysteresis, and gradually adjusts SSD1306 contrast.
+- Detects sustained darkness, touch wakeups, and sudden bright-light changes locally.
 
-Display priority is: powered-off state, user-opened menu, temporary network notice, pet reaction, and the selected home screen. This lets a user open the menu even while Wi-Fi setup information is visible.
+Display priority is: powered-off state, light calibration, user-opened menu, temporary network notice, companion reaction, and the selected home screen. This lets a user open the menu even while Wi-Fi setup information is visible.
 
 ## Security boundary
 

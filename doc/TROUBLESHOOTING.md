@@ -1,5 +1,17 @@
 # Troubleshooting
 
+## Ambient Light always reads 0% or 100%
+
+Confirm the divider midpoint—not 3V3 or GND—is connected to GPIO 34. Use a 10 kΩ fixed resistor and never connect the ADC pin to 5V. Open **Calibrate Light**, cover the LDR and hold, then shine a bright light and hold again. Calibration fails when the two readings differ by fewer than 200 ADC counts.
+
+## OLED brightness flickers or changes in the wrong direction
+
+Run **Calibrate Light** again under realistic dark and bright conditions. The firmware supports either divider orientation, averages samples, and uses hysteresis. Loose breadboard wires can still produce unstable ADC readings.
+
+## Companion does not sleep in darkness
+
+The calibrated light category must remain `DARK` for 30 seconds. Touching the sensor wakes the face for another 30 seconds. Check the Ambient Light screen to see the current category.
+
 ## DHT sensor shows `SENSOR UNAVAILABLE`
 
 Install **DHT sensor library by Adafruit** and accept its dependencies. Wire `VCC` to `3V3`, `GND` to `GND`, and `DATA` or `OUT` to GPIO 26. A bare four-pin sensor also needs a 4.7–10 kΩ pull-up resistor between DATA and 3V3. The firmware defaults to DHT11; change `DHT_TYPE` to `DHT22` when using a DHT22 or AM2302. Wait at least eight seconds after boot because three failed samples are required before the unavailable state is final.

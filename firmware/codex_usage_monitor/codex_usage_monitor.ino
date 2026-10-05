@@ -12,6 +12,7 @@ constexpr int SDA_PIN = 21;
 constexpr int SCL_PIN = 22;
 constexpr int DHT_PIN = 26;
 constexpr int TOUCH_PIN = 27;
+constexpr int LDR_PIN = 34;
 constexpr uint8_t DHT_TYPE = DHT11;
 constexpr unsigned long STALE_AFTER_MS = 180000UL;
 constexpr unsigned long RESET_PAGE_MS = 4000UL;
@@ -26,21 +27,44 @@ constexpr unsigned long NETWORK_LONG_MESSAGE_MS = 15000UL;
 constexpr unsigned long MENU_TIMEOUT_MS = 15000UL;
 constexpr unsigned long AUTO_ROTATE_MS = 8000UL;
 constexpr unsigned long CLIMATE_READ_MS = 2500UL;
+constexpr unsigned long LIGHT_SAMPLE_MS = 100UL;
+constexpr unsigned long LIGHT_BASELINE_MS = 1000UL;
+constexpr unsigned long LIGHT_SLEEP_DELAY_MS = 30000UL;
+constexpr unsigned long TOUCH_WAKE_MS = 30000UL;
+constexpr unsigned long SURPRISE_COOLDOWN_MS = 10000UL;
+constexpr unsigned long CONTRAST_UPDATE_MS = 100UL;
 constexpr unsigned long FRAME_INTERVAL_MS = 80UL;
 constexpr uint8_t MAX_CLIMATE_FAILURES = 3;
+constexpr int DEFAULT_DARK_ADC = 250;
+constexpr int DEFAULT_BRIGHT_ADC = 3500;
+constexpr int MIN_CALIBRATION_SPAN = 200;
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 DHT climateSensor(DHT_PIN, DHT_TYPE);
 Preferences companionPreferences;
 
-enum HomeMode : uint8_t { HOME_COMPANION = 0, HOME_USAGE = 1, HOME_CLIMATE = 2, HOME_AUTO = 3 };
-enum DisplayScreen : uint8_t { SCREEN_COMPANION = 0, SCREEN_USAGE = 1, SCREEN_CLIMATE = 2 };
-enum CompanionMood { MOOD_HAPPY, MOOD_NEUTRAL, MOOD_WORRIED };
-enum PetReaction { REACTION_NONE, REACTION_HAPPY, REACTION_EXCITED };
+enum HomeMode : uint8_t {
+  HOME_COMPANION = 0,
+  HOME_USAGE = 1,
+  HOME_CLIMATE = 2,
+  HOME_AUTO = 3,
+  HOME_AMBIENT = 4
+};
+enum DisplayScreen : uint8_t {
+  SCREEN_COMPANION = 0,
+  SCREEN_USAGE = 1,
+  SCREEN_CLIMATE = 2,
+  SCREEN_AMBIENT = 3
+};
+enum CompanionMood { MOOD_HAPPY, MOOD_NEUTRAL, MOOD_WORRIED, MOOD_SLEEPY };
+enum PetReaction { REACTION_NONE, REACTION_HAPPY, REACTION_EXCITED, REACTION_SURPRISED };
+enum AmbientLevel { AMBIENT_DARK, AMBIENT_DIM, AMBIENT_NORMAL, AMBIENT_BRIGHT };
+enum LightCalibrationStage { CALIBRATION_NONE, CALIBRATION_DARK, CALIBRATION_BRIGHT };
 
-constexpr uint8_t MENU_ITEM_COUNT = 6;
+constexpr uint8_t MENU_ITEM_COUNT = 9;
 const char *const MENU_ITEMS[MENU_ITEM_COUNT] = {
-    "Companion", "Codex Usage", "Room Climate", "Auto Rotate", "Wi-Fi Pairing", "Back"};
+    "Companion", "Codex Usage", "Room Climate", "Ambient Light", "Auto Rotate",
+    "Auto Brightness", "Calibrate Light", "Wi-Fi Pairing", "Back"};
 
 bool displayReady = false;
 bool displayPowered = true;
@@ -79,6 +103,24 @@ float humidityPercent = 0.0f;
 uint8_t climateFailureCount = 0;
 unsigned long lastClimateReadAt = 0;
 
+bool haveLightReading = false;
+bool autoBrightnessEnabled = true;
+float filteredLightRaw = 0.0f;
+int ambientPercent = 50;
+int lightDarkAdc = DEFAULT_DARK_ADC;
+int lightBrightAdc = DEFAULT_BRIGHT_ADC;
+int lightBaselinePercent = 50;
+uint8_t currentContrast = 0xCF;
+AmbientLevel ambientLevel = AMBIENT_NORMAL;
+LightCalibrationStage calibrationStage = CALIBRATION_NONE;
+int pendingDarkAdc = DEFAULT_DARK_ADC;
+unsigned long lastLightSampleAt = 0;
+unsigned long lastLightBaselineAt = 0;
+unsigned long lastContrastUpdateAt = 0;
+unsigned long darknessStartedAt = 0;
+unsigned long touchWakeUntil = 0;
+unsigned long surpriseCooldownUntil = 0;
+
 unsigned long lastFrameAt = 0;
 unsigned long networkMessageUntil = 0;
 String networkLine1;
@@ -87,7 +129,9 @@ bool networkMessageActive = false;
 
 void drawLimits();
 void drawClimate();
+void drawAmbientLight();
 void renderDisplay();
+void triggerSurprisedReaction();
 
 int clampPercent(int value) {
   if (value < 0) return 0;
@@ -144,7 +188,109 @@ String climateLabel() {
   return "COMFY";
 }
 
+const char *ambientLevelLabel() {
+  switch (ambientLevel) {
+    case AMBIENT_DARK: return "DARK";
+    case AMBIENT_DIM: return "DIM";
+    case AMBIENT_BRIGHT: return "BRIGHT";
+    default: return "NORMAL";
+  }
+}
+
+int lightPercentFromRaw(float rawValue) {
+  long span = static_cast<long>(lightBrightAdc) - lightDarkAdc;
+  if (abs(span) < MIN_CALIBRATION_SPAN) return 50;
+  long scaled = (static_cast<long>(rawValue) - lightDarkAdc) * 100L / span;
+  if (scaled < 0) return 0;
+  if (scaled > 100) return 100;
+  return static_cast<int>(scaled);
+}
+
+void updateAmbientLevel() {
+  switch (ambientLevel) {
+    case AMBIENT_DARK:
+      if (ambientPercent > 15) ambientLevel = AMBIENT_DIM;
+      break;
+    case AMBIENT_DIM:
+      if (ambientPercent < 8) ambientLevel = AMBIENT_DARK;
+      else if (ambientPercent > 35) ambientLevel = AMBIENT_NORMAL;
+      break;
+    case AMBIENT_NORMAL:
+      if (ambientPercent < 25) ambientLevel = AMBIENT_DIM;
+      else if (ambientPercent > 80) ambientLevel = AMBIENT_BRIGHT;
+      break;
+    case AMBIENT_BRIGHT:
+      if (ambientPercent < 70) ambientLevel = AMBIENT_NORMAL;
+      break;
+  }
+}
+
+bool touchWakeActive() {
+  unsigned long now = millis();
+  return static_cast<long>(now - touchWakeUntil) < 0;
+}
+
+bool ambientSleeping() {
+  if (!haveLightReading || ambientLevel != AMBIENT_DARK || darknessStartedAt == 0) return false;
+  return !touchWakeActive() && millis() - darknessStartedAt >= LIGHT_SLEEP_DELAY_MS;
+}
+
+void applyAutomaticContrast() {
+  if (!autoBrightnessEnabled || !displayReady || !displayPowered) return;
+  unsigned long now = millis();
+  if (now - lastContrastUpdateAt < CONTRAST_UPDATE_MS) return;
+  lastContrastUpdateAt = now;
+
+  uint8_t target = static_cast<uint8_t>(map(ambientPercent, 0, 100, 8, 255));
+  if (touchWakeActive() && target < 48) target = 48;
+  if (currentContrast < target) {
+    int next = currentContrast + 6;
+    currentContrast = static_cast<uint8_t>(next > target ? target : next);
+  } else if (currentContrast > target) {
+    int next = currentContrast - 6;
+    currentContrast = static_cast<uint8_t>(next < target ? target : next);
+  } else return;
+  display.ssd1306_command(SSD1306_SETCONTRAST);
+  display.ssd1306_command(currentContrast);
+}
+
+void updateAmbientLight() {
+  unsigned long now = millis();
+  if (now - lastLightSampleAt < LIGHT_SAMPLE_MS) return;
+  lastLightSampleAt = now;
+
+  int raw = analogRead(LDR_PIN);
+  if (!haveLightReading) {
+    filteredLightRaw = raw;
+    haveLightReading = true;
+    ambientPercent = lightPercentFromRaw(filteredLightRaw);
+    lightBaselinePercent = ambientPercent;
+    lastLightBaselineAt = now;
+  } else {
+    filteredLightRaw = filteredLightRaw * 0.85f + raw * 0.15f;
+    ambientPercent = lightPercentFromRaw(filteredLightRaw);
+  }
+
+  updateAmbientLevel();
+  if (ambientLevel == AMBIENT_DARK) {
+    if (darknessStartedAt == 0) darknessStartedAt = now;
+  } else darknessStartedAt = 0;
+
+  if (now - lastLightBaselineAt >= LIGHT_BASELINE_MS) {
+    int increase = ambientPercent - lightBaselinePercent;
+    if (increase >= 35 && static_cast<long>(now - surpriseCooldownUntil) >= 0 &&
+        calibrationStage == CALIBRATION_NONE) {
+      triggerSurprisedReaction();
+      surpriseCooldownUntil = now + SURPRISE_COOLDOWN_MS;
+    }
+    lightBaselinePercent = ambientPercent;
+    lastLightBaselineAt = now;
+  }
+  applyAutomaticContrast();
+}
+
 CompanionMood currentMood() {
+  if (ambientSleeping()) return MOOD_SLEEPY;
   if (!haveClimate) return MOOD_NEUTRAL;
   return climateLabel() == "COMFY" ? MOOD_HAPPY : MOOD_WORRIED;
 }
@@ -172,7 +318,15 @@ void drawCompanionFace(CompanionMood mood, PetReaction reaction = REACTION_NONE)
   display.setCursor(31, 2);
   display.print("QUOTAGLOW");
 
-  if (reaction == REACTION_EXCITED) {
+  if (reaction == REACTION_SURPRISED) {
+    display.drawCircle(39, 31, 8, SSD1306_WHITE);
+    display.drawCircle(89, 31, 8, SSD1306_WHITE);
+    display.fillCircle(39, 31, 3, SSD1306_WHITE);
+    display.fillCircle(89, 31, 3, SSD1306_WHITE);
+    display.drawCircle(64, 47, 6, SSD1306_WHITE);
+    display.setCursor(37, 56);
+    display.print("so bright!");
+  } else if (reaction == REACTION_EXCITED) {
     drawEye(39, 31, false, false);
     drawEye(89, 31, false, false);
     display.drawLine(52, 43, 58, 51, SSD1306_WHITE);
@@ -189,6 +343,12 @@ void drawCompanionFace(CompanionMood mood, PetReaction reaction = REACTION_NONE)
     display.drawLine(70, 49, 76, 43, SSD1306_WHITE);
     display.setCursor(43, 55);
     display.print("thanks!");
+  } else if (mood == MOOD_SLEEPY) {
+    display.drawLine(31, 31, 46, 31, SSD1306_WHITE);
+    display.drawLine(82, 31, 97, 31, SSD1306_WHITE);
+    display.drawLine(56, 47, 72, 47, SSD1306_WHITE);
+    display.setCursor(34, 55);
+    display.print("sleepy night");
   } else {
     drawEye(39, 31, blink, worried);
     drawEye(89, 31, blink, worried);
@@ -223,7 +383,8 @@ void drawMenu() {
   display.setCursor(8, 24);
   display.print(">");
   display.setCursor(20, 24);
-  display.print(MENU_ITEMS[menuIndex]);
+  if (menuIndex == 5) display.print(autoBrightnessEnabled ? "Auto Bright: ON" : "Auto Bright: OFF");
+  else display.print(MENU_ITEMS[menuIndex]);
   display.setCursor(50, 39);
   display.print(menuIndex + 1);
   display.print("/");
@@ -233,9 +394,29 @@ void drawMenu() {
   display.display();
 }
 
+void drawLightCalibration() {
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1);
+  display.setCursor(20, 1);
+  display.print("LIGHT CALIBRATE");
+  display.drawLine(0, 12, 127, 12, SSD1306_WHITE);
+  display.setCursor(13, 20);
+  display.print(calibrationStage == CALIBRATION_DARK ? "Cover the sensor" : "Shine bright light");
+  display.setCursor(30, 34);
+  display.print("Reading: ");
+  display.print(static_cast<int>(filteredLightRaw));
+  display.setCursor(12, 48);
+  display.print("Hold to save");
+  display.setCursor(15, 56);
+  display.print("Tap to cancel");
+  display.display();
+}
+
 DisplayScreen visibleScreen() {
   if (homeMode == HOME_USAGE) return SCREEN_USAGE;
   if (homeMode == HOME_CLIMATE) return SCREEN_CLIMATE;
+  if (homeMode == HOME_AMBIENT) return SCREEN_AMBIENT;
   if (homeMode == HOME_AUTO) return autoScreen;
   return SCREEN_COMPANION;
 }
@@ -245,10 +426,11 @@ void updateAutoRotation() {
   unsigned long now = millis();
   if (now - lastAutoRotateAt < AUTO_ROTATE_MS) return;
   lastAutoRotateAt = now;
-  for (uint8_t offset = 1; offset <= 3; offset++) {
-    DisplayScreen candidate = static_cast<DisplayScreen>((static_cast<uint8_t>(autoScreen) + offset) % 3);
+  for (uint8_t offset = 1; offset <= 4; offset++) {
+    DisplayScreen candidate = static_cast<DisplayScreen>((static_cast<uint8_t>(autoScreen) + offset) % 4);
     if (candidate == SCREEN_COMPANION || (candidate == SCREEN_USAGE && haveLimits) ||
-        (candidate == SCREEN_CLIMATE && haveClimate)) {
+        (candidate == SCREEN_CLIMATE && haveClimate) ||
+        (candidate == SCREEN_AMBIENT && haveLightReading)) {
       autoScreen = candidate;
       break;
     }
@@ -258,6 +440,10 @@ void updateAutoRotation() {
 void renderDisplay() {
   if (!displayReady || !displayPowered) return;
   unsigned long now = millis();
+  if (calibrationStage != CALIBRATION_NONE) {
+    drawLightCalibration();
+    return;
+  }
   if (menuActive) {
     drawMenu();
     return;
@@ -276,6 +462,7 @@ void renderDisplay() {
   activeReaction = REACTION_NONE;
   if (visibleScreen() == SCREEN_USAGE) drawLimits();
   else if (visibleScreen() == SCREEN_CLIMATE) drawClimate();
+  else if (visibleScreen() == SCREEN_AMBIENT) drawAmbientLight();
   else drawCompanionFace(currentMood());
 }
 
@@ -289,6 +476,15 @@ void triggerPetReaction() {
   reactionUntil = now + PET_REACTION_MS;
   lastAutoRotateAt = now;
   Serial.println(activeReaction == REACTION_EXCITED ? "Companion excited" : "Companion petted");
+}
+
+void triggerSurprisedReaction() {
+  if (!displayPowered || menuActive || calibrationStage != CALIBRATION_NONE) return;
+  unsigned long now = millis();
+  activeReaction = REACTION_SURPRISED;
+  reactionUntil = now + PET_REACTION_MS;
+  lastAutoRotateAt = now;
+  Serial.println("Companion noticed sudden bright light");
 }
 
 void saveHomeMode(HomeMode selectedMode) {
@@ -312,19 +508,80 @@ void closeMenu() {
   Serial.println("Display menu closed");
 }
 
+void setAutoBrightness(bool enabled) {
+  autoBrightnessEnabled = enabled;
+  companionPreferences.putBool("autoBright", autoBrightnessEnabled);
+  if (!autoBrightnessEnabled && displayReady && displayPowered) {
+    currentContrast = 0xCF;
+    display.ssd1306_command(SSD1306_SETCONTRAST);
+    display.ssd1306_command(currentContrast);
+  } else applyAutomaticContrast();
+}
+
+void startLightCalibration() {
+  menuActive = false;
+  calibrationStage = CALIBRATION_DARK;
+  Serial.println("Light calibration: cover the LDR and hold touch");
+}
+
+void saveLightCalibrationStep() {
+  int reading = static_cast<int>(filteredLightRaw);
+  if (calibrationStage == CALIBRATION_DARK) {
+    pendingDarkAdc = reading;
+    calibrationStage = CALIBRATION_BRIGHT;
+    Serial.println("Light calibration: shine a bright light and hold touch");
+    return;
+  }
+
+  if (calibrationStage == CALIBRATION_BRIGHT) {
+    if (abs(reading - pendingDarkAdc) < MIN_CALIBRATION_SPAN) {
+      calibrationStage = CALIBRATION_NONE;
+      showNetworkMessage("CALIBRATION FAILED", "Use more light range");
+      Serial.println("Light calibration failed: readings are too close");
+      return;
+    }
+    lightDarkAdc = pendingDarkAdc;
+    lightBrightAdc = reading;
+    companionPreferences.putUShort("lightDark", static_cast<uint16_t>(lightDarkAdc));
+    companionPreferences.putUShort("lightBright", static_cast<uint16_t>(lightBrightAdc));
+    ambientPercent = lightPercentFromRaw(filteredLightRaw);
+    calibrationStage = CALIBRATION_NONE;
+    showNetworkMessage("LIGHT CALIBRATED", "Auto brightness ready");
+    Serial.println("Light calibration saved");
+  }
+}
+
+void cancelLightCalibration() {
+  calibrationStage = CALIBRATION_NONE;
+  showNetworkMessage("CALIBRATION", "Cancelled");
+  Serial.println("Light calibration cancelled");
+}
+
 void selectMenuItem() {
   menuLastInputAt = millis();
-  if (menuIndex <= 3) {
+  if (menuIndex <= 2) {
     saveHomeMode(static_cast<HomeMode>(menuIndex));
     closeMenu();
+  } else if (menuIndex == 3) {
+    saveHomeMode(HOME_AMBIENT);
+    closeMenu();
   } else if (menuIndex == 4) {
+    saveHomeMode(HOME_AUTO);
+    closeMenu();
+  } else if (menuIndex == 5) {
+    setAutoBrightness(!autoBrightnessEnabled);
+    menuLastInputAt = millis();
+  } else if (menuIndex == 6) {
+    startLightCalibration();
+  } else if (menuIndex == 7) {
     closeMenu();
     showQuotaGlowPairingInfo();
   } else closeMenu();
 }
 
 void handleShortTap() {
-  if (menuActive) {
+  if (calibrationStage != CALIBRATION_NONE) cancelLightCalibration();
+  else if (menuActive) {
     menuIndex = (menuIndex + 1) % MENU_ITEM_COUNT;
     menuLastInputAt = millis();
   } else if (visibleScreen() == SCREEN_COMPANION) triggerPetReaction();
@@ -340,13 +597,15 @@ void updateTouch() {
   if (down && !touchWasDown) {
     touchWasDown = true;
     touchStartedAt = now;
+    touchWakeUntil = now + TOUCH_WAKE_MS;
     touchIgnored = now < ignoreTouchUntil;
     holdHandled = false;
   }
   if (down && touchWasDown && !touchIgnored && !holdHandled && now - touchStartedAt >= HOLD_MS) {
     holdHandled = true;
     ignoreTouchUntil = now + TOUCH_DEBOUNCE_MS;
-    if (menuActive) selectMenuItem();
+    if (calibrationStage != CALIBRATION_NONE) saveLightCalibrationStep();
+    else if (menuActive) selectMenuItem();
     else openMenu();
   }
   if (!down && touchWasDown) {
@@ -402,6 +661,33 @@ void drawClimate() {
   String label = climateLabel();
   display.setCursor(64 - static_cast<int>(label.length() * 3), 54);
   display.print(label);
+  display.display();
+}
+
+void drawAmbientLight() {
+  if (!displayReady || !displayPowered) return;
+  if (!haveLightReading) {
+    drawCenteredMessage("LIGHT SENSOR", "Waiting for reading");
+    return;
+  }
+
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1);
+  display.setCursor(22, 0);
+  display.print("AMBIENT LIGHT");
+  display.drawLine(0, 10, 127, 10, SSD1306_WHITE);
+  display.setTextSize(2);
+  display.setCursor(38, 15);
+  display.print(ambientPercent);
+  display.print("%");
+  display.setTextSize(1);
+  int labelLength = strlen(ambientLevelLabel());
+  display.setCursor(64 - labelLength * 3, 34);
+  display.print(ambientLevelLabel());
+  drawProgressBar(8, 44, 112, 7, ambientPercent);
+  display.setCursor(35, 55);
+  display.print(autoBrightnessEnabled ? "AUTO: ON" : "AUTO: OFF");
   display.display();
 }
 
@@ -500,6 +786,7 @@ void handlePower(const String fields[], int count) {
     display.ssd1306_command(SSD1306_DISPLAYON);
     displayPowered = true;
     ignoreTouchUntil = millis() + TOUCH_DEBOUNCE_MS;
+    lastContrastUpdateAt = 0;
     Serial.println("OLED powered on by PC");
     renderDisplay();
   }
@@ -546,7 +833,7 @@ bool beginDisplay() {
 HomeMode loadHomeMode() {
   if (companionPreferences.isKey("homeMode")) {
     uint8_t storedMode = companionPreferences.getUChar("homeMode", HOME_COMPANION);
-    if (storedMode <= HOME_AUTO) return static_cast<HomeMode>(storedMode);
+    if (storedMode <= HOME_AMBIENT) return static_cast<HomeMode>(storedMode);
   }
   bool oldFaceFirst = companionPreferences.getBool("faceFirst", true);
   HomeMode migratedMode = oldFaceFirst ? HOME_COMPANION : HOME_USAGE;
@@ -561,8 +848,18 @@ void setup() {
   Serial.println();
   Serial.println("QuotaGlow desk companion starting");
   pinMode(TOUCH_PIN, INPUT);
+  pinMode(LDR_PIN, INPUT);
+  analogReadResolution(12);
+  analogSetPinAttenuation(LDR_PIN, ADC_11db);
   companionPreferences.begin("companion", false);
   homeMode = loadHomeMode();
+  autoBrightnessEnabled = companionPreferences.getBool("autoBright", true);
+  lightDarkAdc = companionPreferences.getUShort("lightDark", DEFAULT_DARK_ADC);
+  lightBrightAdc = companionPreferences.getUShort("lightBright", DEFAULT_BRIGHT_ADC);
+  if (abs(lightBrightAdc - lightDarkAdc) < MIN_CALIBRATION_SPAN) {
+    lightDarkAdc = DEFAULT_DARK_ADC;
+    lightBrightAdc = DEFAULT_BRIGHT_ADC;
+  }
   climateSensor.begin();
   lastClimateReadAt = millis();
   Wire.begin(SDA_PIN, SCL_PIN);
@@ -575,6 +872,7 @@ void setup() {
 void loop() {
   loopQuotaGlowNetwork();
   updateClimate();
+  updateAmbientLight();
   updateTouch();
   if (menuActive && millis() - menuLastInputAt >= MENU_TIMEOUT_MS) closeMenu();
   updateAutoRotation();

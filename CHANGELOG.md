@@ -13,6 +13,9 @@ The project follows [Semantic Versioning](https://semver.org/).
 - On-demand Wi-Fi pairing information without silently unpairing an existing module.
 - Local-first companion moods that work without Codex usage data.
 - Room climate setup guide and future-feature roadmap.
+- LDR ambient sensing on ADC1 GPIO 34 with guided dark/bright calibration.
+- Automatic OLED contrast, dark-room sleep, touch wake, and sudden-light companion reactions.
+- Persistent Ambient Light home screen and auto-brightness menu setting.
 
 ### Changed
 

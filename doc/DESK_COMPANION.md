@@ -22,7 +22,7 @@ Use a standard active-high TTP223 module. Do not connect its `VCC` pin to 5V or 
 | Hold for at least 1.2 seconds | Open the OLED menu. In the menu, hold again to select. |
 | Tap while the menu is open | Move to the next menu item. |
 
-The menu provides Companion, Codex Usage, Room Climate, Auto Rotate, Wi-Fi Pairing, and Back. The selected display mode is stored in ESP32 memory and remains after a restart. The OLED remains dark while monitoring is paused or receives `POWER|OFF`.
+The menu provides Companion, Codex Usage, Room Climate, Ambient Light, Auto Rotate, Auto Brightness, Calibrate Light, Wi-Fi Pairing, and Back. Display and brightness preferences are stored in ESP32 memory and remain after a restart. The OLED remains dark while monitoring is paused or receives `POWER|OFF`.
 
 ## Expressions
 
@@ -32,6 +32,9 @@ The menu provides Companion, Codex Usage, Room Climate, Auto Rotate, Wi-Fi Pairi
 | Warm, cool, dry, or humid room | Concerned, with a room-status label |
 | DHT sensor absent or not ready | Friendly neutral face |
 | Tap or repeated taps | Happy or excited reaction |
+| Room stays dark for 30 seconds | Sleepy expression |
+| Touch while dark | Wakes for 30 seconds |
+| Sudden large light increase | Surprised expression |
 
 Wi-Fi setup, pairing codes, and connection messages appear temporarily. A long hold can still open the menu, and the selected home screen returns afterward.
 

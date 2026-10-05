@@ -111,6 +111,20 @@ For a bare four-pin sensor, place a 4.7–10 kΩ resistor between `DATA` and `3V
 
 Hold the TTP223 for 1.2 seconds to open the display menu, tap to move, and hold to select. Full controls and climate-status meanings are in [ROOM_CLIMATE.md](ROOM_CLIMATE.md).
 
+### Add the ambient-light sensor
+
+Use an LDR and 10 kΩ resistor as a voltage divider:
+
+```text
+3V3 ── LDR ──┬── GPIO 34
+             │
+          10 kΩ
+             │
+            GND
+```
+
+GPIO 34 is input-only and belongs to ADC1, which avoids the ESP32 ADC2/Wi-Fi conflict. Never connect GPIO 34 to 5V. After uploading, open the touch menu and select **Calibrate Light**. Cover the LDR and hold to save the dark reading, then shine a bright light and hold again. See [AMBIENT_LIGHT.md](AMBIENT_LIGHT.md) for complete behavior.
+
 For diagnostics, open Serial Monitor at **115200 baud**. A detected display reports:
 
 ```text

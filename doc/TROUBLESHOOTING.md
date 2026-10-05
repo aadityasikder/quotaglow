@@ -1,10 +1,10 @@
 # Troubleshooting
 
-## DHT22 shows `SENSOR UNAVAILABLE`
+## DHT sensor shows `SENSOR UNAVAILABLE`
 
-Install **DHT sensor library by Adafruit** and accept its dependencies. Wire `VCC` to `3V3`, `GND` to `GND`, and `DATA` or `OUT` to GPIO 26. A bare four-pin sensor also needs a 4.7–10 kΩ pull-up resistor between DATA and 3V3. Wait at least eight seconds after boot because three failed samples are required before the unavailable state is final.
+Install **DHT sensor library by Adafruit** and accept its dependencies. Wire `VCC` to `3V3`, `GND` to `GND`, and `DATA` or `OUT` to GPIO 26. A bare four-pin sensor also needs a 4.7–10 kΩ pull-up resistor between DATA and 3V3. The firmware defaults to DHT11; change `DHT_TYPE` to `DHT22` when using a DHT22 or AM2302. Wait at least eight seconds after boot because three failed samples are required before the unavailable state is final.
 
-If Serial Monitor repeatedly prints `DHT22 reading failed`, shorten the wires, confirm the sensor type is DHT22 rather than DHT11, and check that DATA is not connected to GPIO 27—the touch sensor uses GPIO 27.
+If Serial Monitor repeatedly prints `DHT sensor reading failed`, shorten the wires, confirm the configured sensor type matches the hardware, and check that DATA is not connected to GPIO 27—the touch sensor uses GPIO 27.
 
 ## OLED menu does not open
 

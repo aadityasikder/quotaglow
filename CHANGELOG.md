@@ -8,7 +8,7 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- DHT22 room temperature and humidity monitoring on GPIO 26.
+- DHT11 room temperature and humidity monitoring on GPIO 26, with a documented DHT22 configuration option.
 - Touch-controlled OLED menu with persistent Companion, Codex Usage, Room Climate, and Auto Rotate modes.
 - On-demand Wi-Fi pairing information without silently unpairing an existing module.
 - Local-first companion moods that work without Codex usage data.

@@ -4,7 +4,7 @@ QuotaGlow supports desktop-only use, USB serial, local Wi-Fi, and independent ES
 
 This guide starts with the desktop widget because it is the fastest way to verify that QuotaGlow can read Codex usage. The ESP32 and OLED are optional and can be added afterward.
 
-Optional TTP223 and DHT22 sensors add touch navigation, companion reactions, and room climate readings. See [DESK_COMPANION.md](DESK_COMPANION.md) and [ROOM_CLIMATE.md](ROOM_CLIMATE.md) after confirming the OLED works.
+Optional TTP223 and DHT11/DHT22 sensors add touch navigation, companion reactions, and room climate readings. See [DESK_COMPANION.md](DESK_COMPANION.md) and [ROOM_CLIMATE.md](ROOM_CLIMATE.md) after confirming the OLED works.
 
 ## Part 1: Desktop widget
 
@@ -99,15 +99,15 @@ Success starts with the QuotaGlow startup screen. Wi-Fi setup information may ap
 
 ### Add the room sensor
 
-Disconnect USB before changing wires, then connect a DHT22 module:
+Disconnect USB before changing wires, then connect the default DHT11 module:
 
-| DHT22 label | ESP32 label |
+| DHT11 label | ESP32 label |
 |---|---|
 | `VCC` | `3V3` |
 | `GND` | `GND` |
 | `DATA` / `OUT` | `D26` / GPIO 26 |
 
-For a bare four-pin sensor, place a 4.7–10 kΩ resistor between `DATA` and `3V3`. Three-pin modules commonly include this resistor. The first reading may take several seconds after startup.
+For a bare four-pin sensor, place a 4.7–10 kΩ resistor between `DATA` and `3V3`. Three-pin modules commonly include this resistor. The first reading may take several seconds after startup. To use a DHT22, change `DHT_TYPE` in the sketch from `DHT11` to `DHT22`.
 
 Hold the TTP223 for 1.2 seconds to open the display menu, tap to move, and hold to select. Full controls and climate-status meanings are in [ROOM_CLIMATE.md](ROOM_CLIMATE.md).
 

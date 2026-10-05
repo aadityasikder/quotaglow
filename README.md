@@ -18,7 +18,7 @@ QuotaGlow is an expandable ESP32 desk companion. Its OLED can show an animated f
 - Optional start with Windows
 - Optional ESP32 + SSD1306 OLED display
 - Optional TTP223 touch sensor for an animated desk companion
-- Optional DHT22 room temperature and humidity sensor
+- Optional DHT11 or DHT22 room temperature and humidity sensor
 - Touch-controlled OLED menu with fixed and rotating display modes
 - USB or wireless local-network module connection
 - Browser-based Wi-Fi setup and six-digit pairing
@@ -137,15 +137,15 @@ Use `3V3`, never `VIN` or 5V. Tap the sensor to pet the companion. Hold it for a
 
 ### Add the room climate sensor
 
-Connect a DHT22 or AM2302-compatible sensor:
+The firmware defaults to the DHT11 used by the current reference build. Connect it as follows:
 
-| DHT22 label | ESP32 label |
+| DHT11 label | ESP32 label |
 |---|---|
 | `VCC` | `3V3` |
 | `GND` | `GND` |
 | `DATA` / `OUT` | `D26` / GPIO 26 |
 
-A bare four-pin DHT22 needs a 4.7–10 kΩ pull-up resistor between `DATA` and `3V3`. Most three-pin modules already include one. Use 3.3V, not 5V.
+A bare four-pin sensor needs a 4.7–10 kΩ pull-up resistor between `DATA` and `3V3`. Most three-pin modules already include one. Use 3.3V, not 5V. DHT22 owners can change `DHT_TYPE` from `DHT11` to `DHT22` before uploading.
 
 Hold the touch sensor for 1.2 seconds to open the OLED menu. Tap to move and hold to select **Companion**, **Codex Usage**, **Room Climate**, **Auto Rotate**, or **Wi-Fi Pairing**. See the [room climate and OLED menu guide](doc/ROOM_CLIMATE.md).
 

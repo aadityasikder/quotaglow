@@ -2,7 +2,7 @@
 
 The optional TTP223 touch sensor turns the ESP32 OLED into a small QuotaGlow companion. The companion runs entirely on the ESP32; it does not change Wi-Fi, USB, pairing, or the desktop widget.
 
-Touch reactions do not require Wi-Fi, USB data, or a running desktop widget. The normal face is local-first: missing Codex data no longer makes it look confused. When a DHT22 is connected, room comfort can influence its idle expression.
+Touch reactions do not require Wi-Fi, USB data, or a running desktop widget. The normal face is local-first: missing Codex data no longer makes it look confused. When a configured DHT11 or DHT22 is connected, room comfort can influence its idle expression.
 
 ## Wiring
 
@@ -30,7 +30,7 @@ The menu provides Companion, Codex Usage, Room Climate, Auto Rotate, Wi-Fi Pairi
 |---|---|
 | Comfortable room reading | Relaxed and happy |
 | Warm, cool, dry, or humid room | Concerned, with a room-status label |
-| DHT22 absent or not ready | Friendly neutral face |
+| DHT sensor absent or not ready | Friendly neutral face |
 | Tap or repeated taps | Happy or excited reaction |
 
 Wi-Fi setup, pairing codes, and connection messages appear temporarily. A long hold can still open the menu, and the selected home screen returns afterward.

@@ -12,7 +12,7 @@ constexpr int SDA_PIN = 21;
 constexpr int SCL_PIN = 22;
 constexpr int DHT_PIN = 26;
 constexpr int TOUCH_PIN = 27;
-constexpr uint8_t DHT_TYPE = DHT22;
+constexpr uint8_t DHT_TYPE = DHT11;
 constexpr unsigned long STALE_AFTER_MS = 180000UL;
 constexpr unsigned long RESET_PAGE_MS = 4000UL;
 constexpr unsigned long TOUCH_DEBOUNCE_MS = 250UL;
@@ -369,7 +369,7 @@ void updateClimate() {
       newHumidity > 100.0f || newTemperature < -40.0f || newTemperature > 80.0f) {
     if (climateFailureCount < MAX_CLIMATE_FAILURES) climateFailureCount++;
     if (climateFailureCount >= MAX_CLIMATE_FAILURES) haveClimate = false;
-    Serial.println("DHT22 reading failed");
+    Serial.println("DHT sensor reading failed");
     return;
   }
   humidityPercent = newHumidity;
@@ -381,7 +381,7 @@ void updateClimate() {
 void drawClimate() {
   if (!displayReady || !displayPowered) return;
   if (!haveClimate) {
-    drawCenteredMessage("SENSOR UNAVAILABLE", "Check DHT22 GPIO26");
+    drawCenteredMessage("SENSOR UNAVAILABLE", "Check DATA GPIO26");
     return;
   }
   display.clearDisplay();

@@ -4,7 +4,7 @@ QuotaGlow is growing from a Codex usage display into a modular desk companion. T
 
 - [x] Animated touch companion
 - [x] Codex usage dashboard
-- [x] Room temperature and humidity with DHT22
+- [x] Room temperature and humidity with DHT11/DHT22
 - [ ] Clock and date
 - [ ] Internet weather
 - [ ] Pomodoro timer

@@ -4,7 +4,7 @@ In v1.2 the widget sends display lines through a background transport worker. It
 
 Wi-Fi credentials live only in ESP32 NVS. The device token is stored in ESP32 NVS and encrypted with Windows current-user DPAPI in desktop settings. Discovery exposes only non-sensitive metadata.
 
-The desk companion is firmware-local. GPIO 27 receives TTP223 touch input and GPIO 26 reads the DHT22. The `companion` NVS namespace stores a home-mode enum for Companion, Codex Usage, Room Climate, or Auto Rotate. Existing `faceFirst` values are migrated once. These local features do not add a transport message or desktop setting.
+The desk companion is firmware-local. GPIO 27 receives TTP223 touch input and GPIO 26 reads the configured DHT11 or DHT22 sensor. The `companion` NVS namespace stores a home-mode enum for Companion, Codex Usage, Room Climate, or Auto Rotate. Existing `faceFirst` values are migrated once. These local features do not add a transport message or desktop setting.
 
 ## Overview
 
@@ -22,7 +22,7 @@ QuotaGlow PowerShell core ─────► Floating WPF desktop widget
      ▼
 ESP32 firmware ◄──────── TTP223 touch (GPIO 27)
      ▲
-     └────────────────── DHT22 climate (GPIO 26)
+     └────────────────── DHT climate sensor (GPIO 26)
      │ I²C
      ▼
 SSD1306 OLED and local menu
@@ -67,7 +67,7 @@ The firmware:
 - Alternates their reset countdowns every four seconds.
 - Keeps the last valid data during short communication failures.
 - Marks data stale after three minutes without a valid update.
-- Samples the DHT22 every 2.5 seconds and preserves readings through brief failures.
+- Samples the configured DHT sensor every 2.5 seconds and preserves readings through brief failures.
 - Runs a touch-controlled menu and persists the selected home mode.
 - Rotates only among currently available screens when Auto Rotate is selected.
 

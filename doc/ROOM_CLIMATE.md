@@ -1,18 +1,24 @@
 # Room climate and OLED menu
 
-QuotaGlow can read room temperature and humidity from a DHT22 or AM2302-compatible sensor. This feature runs entirely on the ESP32 and does not require Codex, the desktop widget, USB data, or Wi-Fi.
+QuotaGlow can read room temperature and humidity from a DHT11 or DHT22/AM2302-compatible sensor. This feature runs entirely on the ESP32 and does not require Codex, the desktop widget, USB data, or Wi-Fi. The reference firmware defaults to DHT11.
 
 ## Wiring
 
 Disconnect the ESP32 from power before changing wires.
 
-| DHT22 label | ESP32 label |
+| DHT11 label | ESP32 label |
 |---|---|
 | `VCC` | `3V3` |
 | `GND` | `GND` |
 | `DATA` / `OUT` | `D26` / GPIO 26 |
 
-Use 3.3V, not `VIN` or 5V. A bare four-pin DHT22 requires a 4.7–10 kΩ pull-up resistor from `DATA` to `3V3`. Most three-pin modules already contain the resistor.
+Use 3.3V, not `VIN` or 5V. A bare four-pin sensor requires a 4.7–10 kΩ pull-up resistor from `DATA` to `3V3`. Most three-pin modules already contain the resistor.
+
+For a DHT22, change this firmware line before uploading:
+
+```cpp
+constexpr uint8_t DHT_TYPE = DHT22;
+```
 
 Install **DHT sensor library by Adafruit** through Arduino IDE's Library Manager and accept its dependencies before compiling the firmware.
 
@@ -53,7 +59,7 @@ These labels are informal desk-comfort hints, not health or safety measurements.
 
 ## Troubleshooting
 
-**The Climate screen says `SENSOR UNAVAILABLE`:** wait at least eight seconds after startup, then check 3V3, GND, GPIO 26, and the pull-up resistor. Confirm that **DHT sensor library by Adafruit** is installed.
+**The Climate screen says `SENSOR UNAVAILABLE`:** wait at least eight seconds after startup, then check 3V3, GND, GPIO 26, the pull-up resistor, and that `DHT_TYPE` matches the physical sensor. Confirm that **DHT sensor library by Adafruit** is installed.
 
 **Temperature or humidity jumps around:** shorten jumper wires, check the breadboard rows, keep the sensor away from the ESP32 voltage regulator, and avoid reading it directly in moving warm air.
 

@@ -63,7 +63,7 @@ if (-not $networkSource.Contains('showQuotaGlowPairingInfo()') -or -not $network
 Write-Host 'PASS: firmware Wi-Fi API surface'
 
 $firmwareSource = Get-Content -Raw (Join-Path $projectRoot 'firmware\codex_usage_monitor\codex_usage_monitor.ino')
-foreach($required in 'DHT_PIN = 26','TOUCH_PIN = 27','DHT22','HOME_CLIMATE','HOME_AUTO','drawMenu()','updateClimate()','showQuotaGlowPairingInfo()','companionPreferences.begin','PET_REACTION_MS') {
+foreach($required in 'DHT_PIN = 26','DHT_TYPE = DHT11','TOUCH_PIN = 27','HOME_CLIMATE','HOME_AUTO','drawMenu()','updateClimate()','showQuotaGlowPairingInfo()','companionPreferences.begin','PET_REACTION_MS') {
     if(-not $firmwareSource.Contains($required)){throw "Desk companion firmware is missing $required."}
 }
 if ($firmwareSource.Contains('toggleCompanionMode()')) { throw 'Legacy two-mode touch toggle is still present.' }

@@ -73,8 +73,12 @@ The firmware:
 - Rotates only among currently available screens when Auto Rotate is selected.
 - Smooths LDR samples, applies category hysteresis, and gradually adjusts SSD1306 contrast.
 - Detects sustained darkness, touch wakeups, and sudden bright-light changes locally.
+- Tracks touch-only inactivity through awake, drowsy, very-sleepy, and sleeping rest stages.
+- Detects both sudden brightening and sudden darkness from the same filtered one-second light baseline.
 
 Display priority is: powered-off state, light calibration, user-opened menu, temporary network notice, companion reaction, and the selected home screen. This lets a user open the menu even while Wi-Fi setup information is visible.
+
+Explicit wake, pet, excitement, sudden-light, sudden-darkness, and yawn reactions temporarily override the rest-stage face. Rest-stage timing uses unsigned `millis()` subtraction for rollover safety and resets only from valid touch interaction or `POWER|ON`.
 
 ## Security boundary
 

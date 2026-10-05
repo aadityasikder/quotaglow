@@ -21,6 +21,7 @@ QuotaGlow is an expandable ESP32 desk companion. Its OLED can show an animated f
 - Optional DHT11 or DHT22 room temperature and humidity sensor
 - Optional LDR ambient-light sensor with automatic OLED brightness
 - Touch-controlled OLED menu with fixed and rotating display modes
+- Activity-driven drowsy, yawning, sleeping, and wake-up expressions
 - USB or wireless local-network module connection
 - Browser-based Wi-Fi setup and six-digit pairing
 - Module connect/disconnect and OLED sleep controls
@@ -161,6 +162,8 @@ Create an LDR voltage divider on GPIO 34:
 ```
 
 GPIO 34 is an ADC1 input, so it works while Wi-Fi is active. The LDR enables automatic OLED brightness, a sleepy dark-room face, touch-to-wake, sudden-light reactions, and an Ambient Light screen. Use **Calibrate Light** in the touch menu after wiring it. See [Ambient awareness](doc/AMBIENT_LIGHT.md).
+
+The companion also sleeps from inactivity without requiring an LDR: it becomes drowsy after two minutes, yawns around four minutes, and sleeps after five minutes. The first short touch wakes it; the following tap pets it normally.
 
 Hold the touch sensor for 1.2 seconds to open the OLED menu. Tap to move and hold to select **Companion**, **Codex Usage**, **Room Climate**, **Auto Rotate**, or **Wi-Fi Pairing**. See the [room climate and OLED menu guide](doc/ROOM_CLIMATE.md).
 

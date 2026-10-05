@@ -125,6 +125,8 @@ Use an LDR and 10 kΩ resistor as a voltage divider:
 
 GPIO 34 is input-only and belongs to ADC1, which avoids the ESP32 ADC2/Wi-Fi conflict. Never connect GPIO 34 to 5V. After uploading, open the touch menu and select **Calibrate Light**. Cover the LDR and hold to save the dark reading, then shine a bright light and hold again. See [AMBIENT_LIGHT.md](AMBIENT_LIGHT.md) for complete behavior.
 
+For a complete companion test, leave the Companion screen untouched for two minutes to see the drowsy face, four minutes for its yawn, and five minutes for the animated sleeping face. A short touch should show `good morning!`; a second tap should produce the normal pet response.
+
 For diagnostics, open Serial Monitor at **115200 baud**. A detected display reports:
 
 ```text

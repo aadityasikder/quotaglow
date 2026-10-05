@@ -12,6 +12,18 @@ Run **Calibrate Light** again under realistic dark and bright conditions. The fi
 
 The calibrated light category must remain `DARK` for 30 seconds. Touching the sensor wakes the face for another 30 seconds. Check the Ambient Light screen to see the current category.
 
+## Companion does not become sleepy when idle
+
+Idle timing counts only while the firmware is running and resets on every valid TTP223 touch. Wait on the Companion screen for two uninterrupted minutes. Usage refreshes, Wi-Fi traffic, and sensor readings do not reset the timer. Sleep occurs after five minutes even without an LDR.
+
+## First touch after sleep does not pet the companion
+
+This is expected. The first short touch is reserved for the `good morning!` wake reaction. Tap again after waking to pet it. Holding the first wake touch for 1.2 seconds still opens the menu.
+
+## Sudden darkness reaction does not appear
+
+Calibrate both dark and bright LDR values first. The filtered light reading must fall by at least 35 percentage points in about one second, and sudden-light reactions have a ten-second cooldown. Check the Ambient Light screen while covering the LDR quickly.
+
 ## DHT sensor shows `SENSOR UNAVAILABLE`
 
 Install **DHT sensor library by Adafruit** and accept its dependencies. Wire `VCC` to `3V3`, `GND` to `GND`, and `DATA` or `OUT` to GPIO 26. A bare four-pin sensor also needs a 4.7–10 kΩ pull-up resistor between DATA and 3V3. The firmware defaults to DHT11; change `DHT_TYPE` to `DHT22` when using a DHT22 or AM2302. Wait at least eight seconds after boot because three failed samples are required before the unavailable state is final.

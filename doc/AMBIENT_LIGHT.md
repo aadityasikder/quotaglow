@@ -31,7 +31,10 @@ The readings must differ by at least 200 ADC counts. Calibration values are save
 - **Dark-room sleep:** after the calibrated category stays `DARK` for 30 seconds, the companion closes its eyes.
 - **Touch wake:** touching the TTP223 wakes it for 30 seconds and temporarily raises very low contrast so the reaction remains visible; a normal tap still produces a pet reaction.
 - **Sudden-light reaction:** an increase of at least 35 calibrated percentage points within roughly one second produces a surprised face. A ten-second cooldown prevents repeated reactions.
+- **Sudden-darkness reaction:** a decrease of at least 35 calibrated percentage points within roughly one second produces a startled face using the same cooldown.
 - **Ambient Light screen:** shows the calibrated percentage, `DARK`, `DIM`, `NORMAL`, or `BRIGHT`, a progress bar, and auto-brightness status.
+
+Darkness is a faster path into the general companion rest cycle. After about 15 seconds of calibrated darkness it becomes drowsy, becomes very sleepy after roughly 22.5 seconds, and sleeps after 30 seconds. Touch keeps it awake for another 30 seconds. Without an LDR, the normal two-minute/five-minute inactivity cycle still works.
 
 The light percentage is a relative room-light indicator, not a calibrated lux measurement.
 

@@ -4,6 +4,19 @@ The optional TTP223 touch sensor turns the ESP32 OLED into a small QuotaGlow com
 
 Touch reactions do not require Wi-Fi, USB data, or a running desktop widget. The normal face is local-first: missing Codex data no longer makes it look confused. When a configured DHT11 or DHT22 is connected, room comfort can influence its idle expression.
 
+## Idle and sleep cycle
+
+The companion tracks touch activity independently of network and sensor updates:
+
+| Time without touch | Expression |
+|---|---|
+| Less than 2 minutes | Normal room-aware mood |
+| 2–4 minutes | Drowsy |
+| Around 4 minutes | One yawn, then very sleepy |
+| After 5 minutes | Sleeping with slow breathing and moving `Zzz` |
+
+The first short touch while sleeping shows a two-second `good morning!` wake reaction and is not also counted as a pet. The next tap pets normally. Keeping the initial wake touch held for 1.2 seconds still opens the menu. `POWER|ON` starts a fresh awake period.
+
 ## Wiring
 
 | TTP223 label | ESP32 label |
@@ -35,6 +48,10 @@ The menu provides Companion, Codex Usage, Room Climate, Ambient Light, Auto Rota
 | Room stays dark for 30 seconds | Sleepy expression |
 | Touch while dark | Wakes for 30 seconds |
 | Sudden large light increase | Surprised expression |
+| Sudden large light decrease | Startled darkness expression |
+| Two minutes without touch | Drowsy expression |
+| Four minutes without touch | Yawn and very-sleepy expression |
+| Five minutes without touch | Breathing sleep animation with `Zzz` |
 
 Wi-Fi setup, pairing codes, and connection messages appear temporarily. A long hold can still open the menu, and the selected home screen returns afterward.
 

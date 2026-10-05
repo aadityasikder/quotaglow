@@ -17,7 +17,7 @@ constexpr unsigned long PAIR_CODE_LIFETIME_MS = 600000UL;
 constexpr unsigned long PAIR_ATTEMPT_WINDOW_MS = 60000UL;
 constexpr int MAX_PAIR_ATTEMPTS_PER_WINDOW = 5;
 constexpr char DISCOVERY_REQUEST[] = "QUOTAGLOW_DISCOVER_V1";
-constexpr char FIRMWARE_VERSION[] = "1.4.0";
+constexpr char FIRMWARE_VERSION[] = "1.5.0";
 
 Preferences preferences;
 WebServer webServer(HTTP_PORT);

@@ -21,6 +21,8 @@ constexpr unsigned long TAP_MIN_MS = 50UL;
 constexpr unsigned long TAP_MAX_MS = 700UL;
 constexpr unsigned long HOLD_MS = 1200UL;
 constexpr unsigned long PET_REACTION_MS = 1500UL;
+constexpr unsigned long WAKE_REACTION_MS = 2000UL;
+constexpr unsigned long YAWN_REACTION_MS = 2000UL;
 constexpr unsigned long PET_CHAIN_MS = 1500UL;
 constexpr unsigned long NETWORK_MESSAGE_MS = 3500UL;
 constexpr unsigned long NETWORK_LONG_MESSAGE_MS = 15000UL;
@@ -30,8 +32,13 @@ constexpr unsigned long CLIMATE_READ_MS = 2500UL;
 constexpr unsigned long LIGHT_SAMPLE_MS = 100UL;
 constexpr unsigned long LIGHT_BASELINE_MS = 1000UL;
 constexpr unsigned long LIGHT_SLEEP_DELAY_MS = 30000UL;
+constexpr unsigned long LIGHT_SLEEPY_DELAY_MS = 15000UL;
+constexpr unsigned long LIGHT_VERY_SLEEPY_DELAY_MS = 22500UL;
 constexpr unsigned long TOUCH_WAKE_MS = 30000UL;
 constexpr unsigned long SURPRISE_COOLDOWN_MS = 10000UL;
+constexpr unsigned long IDLE_SLEEPY_MS = 120000UL;
+constexpr unsigned long IDLE_YAWN_MS = 240000UL;
+constexpr unsigned long IDLE_SLEEP_MS = 300000UL;
 constexpr unsigned long CONTRAST_UPDATE_MS = 100UL;
 constexpr unsigned long FRAME_INTERVAL_MS = 80UL;
 constexpr uint8_t MAX_CLIMATE_FAILURES = 3;
@@ -56,8 +63,24 @@ enum DisplayScreen : uint8_t {
   SCREEN_CLIMATE = 2,
   SCREEN_AMBIENT = 3
 };
-enum CompanionMood { MOOD_HAPPY, MOOD_NEUTRAL, MOOD_WORRIED, MOOD_SLEEPY };
-enum PetReaction { REACTION_NONE, REACTION_HAPPY, REACTION_EXCITED, REACTION_SURPRISED };
+enum CompanionMood {
+  MOOD_HAPPY,
+  MOOD_NEUTRAL,
+  MOOD_WORRIED,
+  MOOD_DROWSY,
+  MOOD_VERY_SLEEPY,
+  MOOD_SLEEPING
+};
+enum PetReaction {
+  REACTION_NONE,
+  REACTION_HAPPY,
+  REACTION_EXCITED,
+  REACTION_SURPRISED,
+  REACTION_DARK_STARTLED,
+  REACTION_YAWN,
+  REACTION_WAKE
+};
+enum RestStage { REST_AWAKE, REST_DROWSY, REST_VERY_SLEEPY, REST_SLEEPING };
 enum AmbientLevel { AMBIENT_DARK, AMBIENT_DIM, AMBIENT_NORMAL, AMBIENT_BRIGHT };
 enum LightCalibrationStage { CALIBRATION_NONE, CALIBRATION_DARK, CALIBRATION_BRIGHT };
 
@@ -94,8 +117,12 @@ unsigned long touchStartedAt = 0;
 unsigned long ignoreTouchUntil = 0;
 PetReaction activeReaction = REACTION_NONE;
 unsigned long reactionUntil = 0;
+unsigned long reactionStartedAt = 0;
 unsigned long lastPetAt = 0;
 uint8_t petChainCount = 0;
+unsigned long lastInteractionAt = 0;
+bool idleYawnShown = false;
+bool wakeGestureConsumed = false;
 
 bool haveClimate = false;
 float temperatureC = 0.0f;
@@ -131,7 +158,11 @@ void drawLimits();
 void drawClimate();
 void drawAmbientLight();
 void renderDisplay();
+DisplayScreen visibleScreen();
 void triggerSurprisedReaction();
+void triggerDarknessReaction();
+void triggerWakeReaction();
+void triggerYawnReaction();
 
 int clampPercent(int value) {
   if (value < 0) return 0;
@@ -230,9 +261,43 @@ bool touchWakeActive() {
   return static_cast<long>(now - touchWakeUntil) < 0;
 }
 
-bool ambientSleeping() {
-  if (!haveLightReading || ambientLevel != AMBIENT_DARK || darknessStartedAt == 0) return false;
-  return !touchWakeActive() && millis() - darknessStartedAt >= LIGHT_SLEEP_DELAY_MS;
+RestStage currentRestStage() {
+  unsigned long now = millis();
+  unsigned long idleFor = now - lastInteractionAt;
+  RestStage stage = REST_AWAKE;
+  if (idleFor >= IDLE_SLEEP_MS) stage = REST_SLEEPING;
+  else if (idleFor >= IDLE_YAWN_MS) stage = REST_VERY_SLEEPY;
+  else if (idleFor >= IDLE_SLEEPY_MS) stage = REST_DROWSY;
+
+  if (haveLightReading && ambientLevel == AMBIENT_DARK && darknessStartedAt != 0 &&
+      !touchWakeActive()) {
+    unsigned long darkFor = now - darknessStartedAt;
+    RestStage darkStage = REST_AWAKE;
+    if (darkFor >= LIGHT_SLEEP_DELAY_MS) darkStage = REST_SLEEPING;
+    else if (darkFor >= LIGHT_VERY_SLEEPY_DELAY_MS) darkStage = REST_VERY_SLEEPY;
+    else if (darkFor >= LIGHT_SLEEPY_DELAY_MS) darkStage = REST_DROWSY;
+    if (darkStage > stage) stage = darkStage;
+  }
+  return stage;
+}
+
+bool companionSleeping() {
+  return currentRestStage() == REST_SLEEPING;
+}
+
+void recordInteraction(unsigned long now) {
+  lastInteractionAt = now;
+  idleYawnShown = false;
+}
+
+void updateIdleExpressions() {
+  if (!displayPowered || idleYawnShown || millis() - lastInteractionAt < IDLE_YAWN_MS ||
+      millis() - lastInteractionAt >= IDLE_SLEEP_MS) return;
+  if (visibleScreen() != SCREEN_COMPANION) return;
+  if (menuActive || calibrationStage != CALIBRATION_NONE || activeReaction != REACTION_NONE) return;
+  if (networkMessageActive && millis() < networkMessageUntil) return;
+  idleYawnShown = true;
+  triggerYawnReaction();
 }
 
 void applyAutomaticContrast() {
@@ -277,10 +342,11 @@ void updateAmbientLight() {
   } else darknessStartedAt = 0;
 
   if (now - lastLightBaselineAt >= LIGHT_BASELINE_MS) {
-    int increase = ambientPercent - lightBaselinePercent;
-    if (increase >= 35 && static_cast<long>(now - surpriseCooldownUntil) >= 0 &&
+    int lightChange = ambientPercent - lightBaselinePercent;
+    if (abs(lightChange) >= 35 && static_cast<long>(now - surpriseCooldownUntil) >= 0 &&
         calibrationStage == CALIBRATION_NONE) {
-      triggerSurprisedReaction();
+      if (lightChange > 0) triggerSurprisedReaction();
+      else triggerDarknessReaction();
       surpriseCooldownUntil = now + SURPRISE_COOLDOWN_MS;
     }
     lightBaselinePercent = ambientPercent;
@@ -290,7 +356,10 @@ void updateAmbientLight() {
 }
 
 CompanionMood currentMood() {
-  if (ambientSleeping()) return MOOD_SLEEPY;
+  RestStage restStage = currentRestStage();
+  if (restStage == REST_SLEEPING) return MOOD_SLEEPING;
+  if (restStage == REST_VERY_SLEEPY) return MOOD_VERY_SLEEPY;
+  if (restStage == REST_DROWSY) return MOOD_DROWSY;
   if (!haveClimate) return MOOD_NEUTRAL;
   return climateLabel() == "COMFY" ? MOOD_HAPPY : MOOD_WORRIED;
 }
@@ -318,7 +387,43 @@ void drawCompanionFace(CompanionMood mood, PetReaction reaction = REACTION_NONE)
   display.setCursor(31, 2);
   display.print("QUOTAGLOW");
 
-  if (reaction == REACTION_SURPRISED) {
+  if (reaction == REACTION_WAKE) {
+    unsigned long wakeElapsed = millis() - reactionStartedAt;
+    if (wakeElapsed < 600UL) {
+      display.drawLine(31, 31, 46, 31, SSD1306_WHITE);
+      display.drawLine(82, 31, 97, 31, SSD1306_WHITE);
+    } else if (wakeElapsed < 1200UL) {
+      display.drawLine(31, 33, 39, 29, SSD1306_WHITE);
+      display.drawLine(39, 29, 46, 33, SSD1306_WHITE);
+      display.drawLine(82, 33, 90, 29, SSD1306_WHITE);
+      display.drawLine(90, 29, 97, 33, SSD1306_WHITE);
+    } else {
+      drawEye(39, 31, false, false);
+      drawEye(89, 31, false, false);
+    }
+    display.drawLine(52, 45, 58, 50, SSD1306_WHITE);
+    display.drawLine(58, 50, 70, 50, SSD1306_WHITE);
+    display.drawLine(70, 50, 76, 45, SSD1306_WHITE);
+    display.drawLine(25, 43, 15, 36, SSD1306_WHITE);
+    display.drawLine(103, 43, 113, 36, SSD1306_WHITE);
+    display.setCursor(28, 56);
+    display.print("good morning!");
+  } else if (reaction == REACTION_DARK_STARTLED) {
+    display.drawCircle(39, 31, 7, SSD1306_WHITE);
+    display.drawCircle(89, 31, 7, SSD1306_WHITE);
+    display.fillCircle(39, 31, 2, SSD1306_WHITE);
+    display.fillCircle(89, 31, 2, SSD1306_WHITE);
+    display.drawLine(57, 48, 64, 43, SSD1306_WHITE);
+    display.drawLine(64, 43, 71, 48, SSD1306_WHITE);
+    display.setCursor(10, 56);
+    display.print("where'd light go?");
+  } else if (reaction == REACTION_YAWN) {
+    display.drawLine(31, 31, 46, 31, SSD1306_WHITE);
+    display.drawLine(82, 31, 97, 31, SSD1306_WHITE);
+    display.drawCircle(64, 47, 7, SSD1306_WHITE);
+    display.setCursor(43, 56);
+    display.print("yaaawn...");
+  } else if (reaction == REACTION_SURPRISED) {
     display.drawCircle(39, 31, 8, SSD1306_WHITE);
     display.drawCircle(89, 31, 8, SSD1306_WHITE);
     display.fillCircle(39, 31, 3, SSD1306_WHITE);
@@ -343,12 +448,31 @@ void drawCompanionFace(CompanionMood mood, PetReaction reaction = REACTION_NONE)
     display.drawLine(70, 49, 76, 43, SSD1306_WHITE);
     display.setCursor(43, 55);
     display.print("thanks!");
-  } else if (mood == MOOD_SLEEPY) {
+  } else if (mood == MOOD_SLEEPING) {
+    uint8_t breathPhase = (millis() / 700UL) % 4;
+    int offset = (breathPhase == 1 || breathPhase == 2) ? 1 : 0;
+    display.drawLine(31, 30 + offset, 46, 30 + offset, SSD1306_WHITE);
+    display.drawLine(82, 30 + offset, 97, 30 + offset, SSD1306_WHITE);
+    display.drawLine(57, 47 + offset, 71, 47 + offset, SSD1306_WHITE);
+    int zShift = breathPhase % 2;
+    display.setCursor(96 + zShift, 17 - zShift);
+    display.print("z");
+    display.setCursor(105 - zShift, 9 + zShift);
+    display.print("Z");
+    display.setCursor(40, 56);
+    display.print("sleeping");
+  } else if (mood == MOOD_VERY_SLEEPY) {
     display.drawLine(31, 31, 46, 31, SSD1306_WHITE);
     display.drawLine(82, 31, 97, 31, SSD1306_WHITE);
-    display.drawLine(56, 47, 72, 47, SSD1306_WHITE);
-    display.setCursor(34, 55);
-    display.print("sleepy night");
+    display.drawCircle(64, 47, 4, SSD1306_WHITE);
+    display.setCursor(25, 56);
+    display.print("almost asleep");
+  } else if (mood == MOOD_DROWSY) {
+    display.drawLine(31, 29, 46, 32, SSD1306_WHITE);
+    display.drawLine(82, 32, 97, 29, SSD1306_WHITE);
+    display.drawLine(57, 47, 71, 47, SSD1306_WHITE);
+    display.setCursor(20, 56);
+    display.print("getting sleepy");
   } else {
     drawEye(39, 31, blink, worried);
     drawEye(89, 31, blink, worried);
@@ -473,6 +597,7 @@ void triggerPetReaction() {
   } else petChainCount = 1;
   lastPetAt = now;
   activeReaction = petChainCount >= 2 ? REACTION_EXCITED : REACTION_HAPPY;
+  reactionStartedAt = now;
   reactionUntil = now + PET_REACTION_MS;
   lastAutoRotateAt = now;
   Serial.println(activeReaction == REACTION_EXCITED ? "Companion excited" : "Companion petted");
@@ -482,9 +607,38 @@ void triggerSurprisedReaction() {
   if (!displayPowered || menuActive || calibrationStage != CALIBRATION_NONE) return;
   unsigned long now = millis();
   activeReaction = REACTION_SURPRISED;
+  reactionStartedAt = now;
   reactionUntil = now + PET_REACTION_MS;
   lastAutoRotateAt = now;
   Serial.println("Companion noticed sudden bright light");
+}
+
+void triggerDarknessReaction() {
+  if (!displayPowered || menuActive || calibrationStage != CALIBRATION_NONE) return;
+  unsigned long now = millis();
+  activeReaction = REACTION_DARK_STARTLED;
+  reactionStartedAt = now;
+  reactionUntil = now + PET_REACTION_MS;
+  lastAutoRotateAt = now;
+  Serial.println("Companion noticed sudden darkness");
+}
+
+void triggerYawnReaction() {
+  unsigned long now = millis();
+  activeReaction = REACTION_YAWN;
+  reactionStartedAt = now;
+  reactionUntil = now + YAWN_REACTION_MS;
+  lastAutoRotateAt = now;
+  Serial.println("Companion yawned after being idle");
+}
+
+void triggerWakeReaction() {
+  unsigned long now = millis();
+  activeReaction = REACTION_WAKE;
+  reactionStartedAt = now;
+  reactionUntil = now + WAKE_REACTION_MS;
+  lastAutoRotateAt = now;
+  Serial.println("Companion woke up");
 }
 
 void saveHomeMode(HomeMode selectedMode) {
@@ -595,11 +749,20 @@ void updateTouch() {
   unsigned long now = millis();
   bool down = digitalRead(TOUCH_PIN) == HIGH;
   if (down && !touchWasDown) {
+    bool wasSleeping = visibleScreen() == SCREEN_COMPANION && companionSleeping();
     touchWasDown = true;
     touchStartedAt = now;
-    touchWakeUntil = now + TOUCH_WAKE_MS;
     touchIgnored = now < ignoreTouchUntil;
     holdHandled = false;
+    wakeGestureConsumed = false;
+    if (!touchIgnored) {
+      recordInteraction(now);
+      touchWakeUntil = now + TOUCH_WAKE_MS;
+      if (wasSleeping) {
+        wakeGestureConsumed = true;
+        triggerWakeReaction();
+      }
+    }
   }
   if (down && touchWasDown && !touchIgnored && !holdHandled && now - touchStartedAt >= HOLD_MS) {
     holdHandled = true;
@@ -611,10 +774,11 @@ void updateTouch() {
   if (!down && touchWasDown) {
     unsigned long duration = now - touchStartedAt;
     if (!touchIgnored && !holdHandled && duration >= TAP_MIN_MS && duration <= TAP_MAX_MS) {
-      handleShortTap();
+      if (!wakeGestureConsumed) handleShortTap();
       ignoreTouchUntil = now + TOUCH_DEBOUNCE_MS;
     }
     touchWasDown = false;
+    wakeGestureConsumed = false;
   }
 }
 
@@ -785,7 +949,11 @@ void handlePower(const String fields[], int count) {
   } else if (fields[1] == "ON") {
     display.ssd1306_command(SSD1306_DISPLAYON);
     displayPowered = true;
-    ignoreTouchUntil = millis() + TOUCH_DEBOUNCE_MS;
+    unsigned long now = millis();
+    ignoreTouchUntil = now + TOUCH_DEBOUNCE_MS;
+    touchWakeUntil = now + TOUCH_WAKE_MS;
+    recordInteraction(now);
+    wakeGestureConsumed = false;
     lastContrastUpdateAt = 0;
     Serial.println("OLED powered on by PC");
     renderDisplay();
@@ -867,6 +1035,7 @@ void setup() {
   if (!displayReady) Serial.println("OLED not found at 0x3C or 0x3D");
   else drawCenteredMessage("QUOTAGLOW", "Starting companion");
   beginQuotaGlowNetwork(handleNetworkLine, showNetworkMessage);
+  lastInteractionAt = millis();
 }
 
 void loop() {
@@ -874,6 +1043,7 @@ void loop() {
   updateClimate();
   updateAmbientLight();
   updateTouch();
+  updateIdleExpressions();
   if (menuActive && millis() - menuLastInputAt >= MENU_TIMEOUT_MS) closeMenu();
   updateAutoRotation();
   while (Serial.available() > 0) {

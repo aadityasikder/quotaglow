@@ -4,7 +4,7 @@ All notable changes to QuotaGlow are documented here.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
-## [1.4.0] - Unreleased
+## [1.4.0] - 2026-10-06
 
 ### Added
 

@@ -17,6 +17,7 @@ QuotaGlow shows your Codex usage in a small always-on-top Windows widget. With a
 - Full and compact draggable widget modes
 - Optional start with Windows
 - Optional ESP32 + SSD1306 OLED display
+- Optional TTP223 touch sensor for an animated desk companion
 - USB or wireless local-network module connection
 - Browser-based Wi-Fi setup and six-digit pairing
 - Module connect/disconnect and OLED sleep controls
@@ -117,6 +118,18 @@ The OLED immediately receives the latest values and follows future refreshes. Di
 
 See the [Wi-Fi setup guide](doc/WIFI_SETUP.md) for complete instructions and safety notes.
 
+### Add the desk companion touch sensor
+
+QuotaGlow can show an animated face and react when you pet it. Connect a standard TTP223 capacitive touch module:
+
+| TTP223 label | ESP32 label |
+|---|---|
+| `VCC` | `3V3` |
+| `GND` | `GND` |
+| `OUT` | `D27` / GPIO 27 |
+
+Use `3V3`, never `VIN` or 5V. Tap the sensor to pet the companion. Hold it for about 1.2 seconds to switch persistently between the face and usage-dashboard screens.
+
 ## Widget controls
 
 | Control | Behavior |
@@ -145,6 +158,7 @@ Settings are saved in `%LOCALAPPDATA%\QuotaGlow\settings.json`. This file contai
 - [USB serial protocol](doc/SERIAL_PROTOCOL.md)
 - [Wi-Fi setup and pairing](doc/WIFI_SETUP.md)
 - [Wi-Fi discovery and local API](doc/WIFI_API.md)
+- [Desk companion guide](doc/DESK_COMPANION.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)

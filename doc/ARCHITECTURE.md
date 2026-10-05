@@ -4,6 +4,8 @@ In v1.2 the widget sends display lines through a background transport worker. It
 
 Wi-Fi credentials live only in ESP32 NVS. The device token is stored in ESP32 NVS and encrypted with Windows current-user DPAPI in desktop settings. Discovery exposes only non-sensitive metadata.
 
+The desk companion is firmware-local. GPIO 27 receives TTP223 touch input, while a separate `companion` NVS namespace stores the selected face-first or usage-first display mode. It consumes the existing parsed quota state and does not add a transport message or desktop setting.
+
 ## Overview
 
 The monitor has a reusable core and two user interfaces:

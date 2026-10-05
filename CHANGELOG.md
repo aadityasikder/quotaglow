@@ -4,6 +4,18 @@ All notable changes to QuotaGlow are documented here.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-10-06
+
+### Added
+
+- Optional TTP223 touch sensor support on GPIO 27.
+- Animated face-first desk companion with idle blinking and quota-aware moods.
+- Tap-to-pet happy and excited reactions that work without usage data or Wi-Fi.
+- Persistent touch-and-hold switching between companion and usage-dashboard modes.
+- Desk companion wiring, controls, expressions, and troubleshooting documentation.
+
+USB, Wi-Fi, pairing, desktop-only, and legacy display protocols remain backward compatible.
+
 ## [1.2.0] - 2026-10-04
 
 ### Added
@@ -45,6 +57,7 @@ USB, desktop-only, and demo modes remain backward compatible. Bluetooth LE is de
 - Five-hour and weekly remaining percentages and reset countdowns.
 - Demo mode, stale-data handling, and USB serial protocol.
 
+[1.3.0]: https://github.com/aadityasikder/quotaglow/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/aadityasikder/quotaglow/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/aadityasikder/quotaglow/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aadityasikder/quotaglow/releases/tag/v1.0.0

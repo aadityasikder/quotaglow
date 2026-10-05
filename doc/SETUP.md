@@ -4,6 +4,8 @@ QuotaGlow 1.2 supports desktop-only use, USB serial, and local Wi-Fi. For wirele
 
 This guide starts with the desktop widget because it is the fastest way to verify that QuotaGlow can read Codex usage. The ESP32 and OLED are optional and can be added afterward.
 
+An optional TTP223 sensor adds touch reactions and a face-first desk companion. See [DESK_COMPANION.md](DESK_COMPANION.md) after confirming the OLED works.
+
 ## Part 1: Desktop widget
 
 ### Requirements

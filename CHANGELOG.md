@@ -4,6 +4,23 @@ All notable changes to QuotaGlow are documented here.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - Unreleased
+
+### Added
+
+- Activity-driven drowsy, very-sleepy, yawning, sleeping, and wake-up companion expressions.
+- Slow breathing and moving `Zzz` animation while sleeping.
+- Wake-only first touch with long-hold menu compatibility.
+- Sudden-darkness reaction alongside the existing sudden-brightness reaction.
+
+### Changed
+
+- Companion inactivity now progresses from awake to drowsy at two minutes, yawns around four minutes, and sleeps after five minutes.
+- Sustained darkness shows a sleepy face after 15 seconds and retains the existing 30-second sleep behavior.
+- `POWER|ON` resets the companion to an awake state without changing saved settings.
+
+Existing display modes, sensors, USB, Wi-Fi, pairing, and desktop protocols remain backward compatible.
+
 ## [1.4.0] - 2026-10-06
 
 ### Added
@@ -79,6 +96,7 @@ USB, desktop-only, and demo modes remain backward compatible. Bluetooth LE is de
 
 [1.3.0]: https://github.com/aadityasikder/quotaglow/compare/v1.2.0...v1.3.0
 [1.4.0]: https://github.com/aadityasikder/quotaglow/compare/v1.3.0...v1.4.0
+[1.5.0]: https://github.com/aadityasikder/quotaglow/compare/v1.4.0...v1.5.0
 [1.2.0]: https://github.com/aadityasikder/quotaglow/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/aadityasikder/quotaglow/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aadityasikder/quotaglow/releases/tag/v1.0.0

@@ -6,6 +6,7 @@ QuotaGlow is growing from a Codex usage display into a modular desk companion. T
 - [x] Codex usage dashboard
 - [x] Room temperature and humidity with DHT11/DHT22
 - [x] Ambient-light sensing, automatic OLED brightness, and dark-room reactions
+- [x] Activity-driven drowsy, sleep, wake, and yawn expressions
 - [ ] Clock and date
 - [ ] Internet weather
 - [ ] Pomodoro timer

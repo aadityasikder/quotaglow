@@ -69,6 +69,9 @@ foreach($required in 'DHT_PIN = 26','DHT_TYPE = DHT11','TOUCH_PIN = 27','HOME_CL
 foreach($required in 'LDR_PIN = 34','HOME_AMBIENT','SCREEN_AMBIENT','updateAmbientLight()','SSD1306_SETCONTRAST','CALIBRATION_DARK','autoBright','lightDark','lightBright','REACTION_SURPRISED') {
     if(-not $firmwareSource.Contains($required)){throw "Ambient-awareness firmware is missing $required."}
 }
+foreach($required in 'IDLE_SLEEPY_MS = 120000UL','IDLE_YAWN_MS = 240000UL','IDLE_SLEEP_MS = 300000UL','REST_DROWSY','REST_SLEEPING','REACTION_DARK_STARTLED','REACTION_YAWN','REACTION_WAKE','lastInteractionAt','wakeGestureConsumed','updateIdleExpressions()') {
+    if(-not $firmwareSource.Contains($required)){throw "Idle-expression firmware is missing $required."}
+}
 if ($firmwareSource.Contains('toggleCompanionMode()')) { throw 'Legacy two-mode touch toggle is still present.' }
 if ($firmwareSource.IndexOf('if (menuActive)') -gt $firmwareSource.IndexOf('if (networkMessageActive)')) {
     throw 'The touch menu must render before temporary network messages.'

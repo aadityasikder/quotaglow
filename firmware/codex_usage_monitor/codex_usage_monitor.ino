@@ -146,7 +146,26 @@ void drawCompanionFace(CompanionMood mood, PetReaction reaction = REACTION_NONE)
   display.setCursor(31, 2);
   display.print("QUOTAGLOW");
 
-  if (mood == MOOD_CONFUSED) {
+  // A pet reaction always wins, even when the normal face is confused because
+  // the module has not received usage data yet.
+  if (reaction == REACTION_EXCITED) {
+    drawEye(39, 31, false, false);
+    drawEye(89, 31, false, false);
+    display.drawLine(52, 43, 58, 51, SSD1306_WHITE);
+    display.drawLine(58, 51, 64, 43, SSD1306_WHITE);
+    display.drawLine(64, 43, 70, 51, SSD1306_WHITE);
+    display.drawLine(70, 51, 76, 43, SSD1306_WHITE);
+    display.setCursor(42, 55);
+    display.print("so happy!");
+  } else if (reaction == REACTION_HAPPY) {
+    drawEye(39, 31, false, false);
+    drawEye(89, 31, false, false);
+    display.drawLine(52, 43, 58, 49, SSD1306_WHITE);
+    display.drawLine(58, 49, 70, 49, SSD1306_WHITE);
+    display.drawLine(70, 49, 76, 43, SSD1306_WHITE);
+    display.setCursor(43, 55);
+    display.print("thanks!");
+  } else if (mood == MOOD_CONFUSED) {
     display.drawCircle(39, 31, 8, SSD1306_WHITE);
     display.fillCircle(39, 31, 2, SSD1306_WHITE);
     display.drawLine(79, 24, 90, 24, SSD1306_WHITE);
@@ -165,19 +184,12 @@ void drawCompanionFace(CompanionMood mood, PetReaction reaction = REACTION_NONE)
   } else {
     drawEye(39, 31, blink, worried);
     drawEye(89, 31, blink, worried);
-    if (reaction == REACTION_EXCITED) {
-      display.drawLine(52, 43, 58, 51, SSD1306_WHITE);
-      display.drawLine(58, 51, 64, 43, SSD1306_WHITE);
-      display.drawLine(64, 43, 70, 51, SSD1306_WHITE);
-      display.drawLine(70, 51, 76, 43, SSD1306_WHITE);
-      display.setCursor(42, 55);
-      display.print("so happy!");
-    } else if (reaction == REACTION_HAPPY || mood == MOOD_HAPPY) {
+    if (mood == MOOD_HAPPY) {
       display.drawLine(52, 43, 58, 49, SSD1306_WHITE);
       display.drawLine(58, 49, 70, 49, SSD1306_WHITE);
       display.drawLine(70, 49, 76, 43, SSD1306_WHITE);
       display.setCursor(43, 55);
-      display.print(reaction == REACTION_HAPPY ? "thanks!" : "all good");
+      display.print("all good");
     } else if (mood == MOOD_WORRIED) {
       display.drawLine(52, 50, 64, 43, SSD1306_WHITE);
       display.drawLine(64, 43, 76, 50, SSD1306_WHITE);

@@ -2,6 +2,8 @@
 
 The optional TTP223 touch sensor turns the ESP32 OLED into a small QuotaGlow companion. The companion runs entirely on the ESP32; it does not change Wi-Fi, USB, pairing, or the desktop widget.
 
+Touch reactions do not require Wi-Fi, USB data, or a running desktop widget. Without a valid usage update, the companion normally looks confused, but taps still show its happy reaction before it returns to that no-data state.
+
 ## Wiring
 
 | TTP223 label | ESP32 label |

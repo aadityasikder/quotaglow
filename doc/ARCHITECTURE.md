@@ -4,11 +4,11 @@ In v1.2 the widget sends display lines through a background transport worker. It
 
 Wi-Fi credentials live only in ESP32 NVS. The device token is stored in ESP32 NVS and encrypted with Windows current-user DPAPI in desktop settings. Discovery exposes only non-sensitive metadata.
 
-The desk companion is firmware-local. GPIO 27 receives TTP223 touch input, while a separate `companion` NVS namespace stores the selected face-first or usage-first display mode. It consumes the existing parsed quota state and does not add a transport message or desktop setting.
+The desk companion is firmware-local. GPIO 27 receives TTP223 touch input and GPIO 26 reads the DHT22. The `companion` NVS namespace stores a home-mode enum for Companion, Codex Usage, Room Climate, or Auto Rotate. Existing `faceFirst` values are migrated once. These local features do not add a transport message or desktop setting.
 
 ## Overview
 
-The monitor has a reusable core and two user interfaces:
+The Windows monitor is optional. Local touch and climate features continue running directly on the ESP32:
 
 ```text
 Codex account
@@ -17,17 +17,18 @@ Codex account
 Local Codex app-server
      │ JSON messages over standard input/output
      ▼
-QuotaGlow PowerShell core
-     ├──────────────► Floating WPF desktop widget
-     │ compact text messages over USB serial
+QuotaGlow PowerShell core ─────► Floating WPF desktop widget
+     │ optional display messages over USB or trusted Wi-Fi
      ▼
-ESP32 firmware
+ESP32 firmware ◄──────── TTP223 touch (GPIO 27)
+     ▲
+     └────────────────── DHT22 climate (GPIO 26)
      │ I²C
      ▼
-SSD1306 OLED
+SSD1306 OLED and local menu
 ```
 
-The desktop widget works independently of the ESP32. The Windows core is required because the ESP32 does not authenticate with OpenAI and does not hold account credentials.
+The desktop widget works independently of the ESP32, and the companion and climate screens work independently of Windows. The Windows core is required only for Codex usage because the ESP32 does not authenticate with OpenAI and does not hold account credentials.
 
 ## Desktop widget
 
@@ -66,6 +67,11 @@ The firmware:
 - Alternates their reset countdowns every four seconds.
 - Keeps the last valid data during short communication failures.
 - Marks data stale after three minutes without a valid update.
+- Samples the DHT22 every 2.5 seconds and preserves readings through brief failures.
+- Runs a touch-controlled menu and persists the selected home mode.
+- Rotates only among currently available screens when Auto Rotate is selected.
+
+Display priority is: powered-off state, user-opened menu, temporary network notice, pet reaction, and the selected home screen. This lets a user open the menu even while Wi-Fi setup information is visible.
 
 ## Security boundary
 
@@ -77,6 +83,6 @@ Keep that boundary intact when extending the project. Do not copy Codex authenti
 
 - Windows is required by the current PowerShell launcher.
 - The computer and widget/helper must remain running.
-- Communication uses USB rather than Wi-Fi.
+- Module communication supports USB or authenticated HTTP on a trusted local Wi-Fi network.
 - The OLED layout targets 128×64 SSD1306-compatible displays.
 - The local Codex rate-limit operation is experimental.

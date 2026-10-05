@@ -1,5 +1,15 @@
 # Troubleshooting
 
+## DHT22 shows `SENSOR UNAVAILABLE`
+
+Install **DHT sensor library by Adafruit** and accept its dependencies. Wire `VCC` to `3V3`, `GND` to `GND`, and `DATA` or `OUT` to GPIO 26. A bare four-pin sensor also needs a 4.7–10 kΩ pull-up resistor between DATA and 3V3. Wait at least eight seconds after boot because three failed samples are required before the unavailable state is final.
+
+If Serial Monitor repeatedly prints `DHT22 reading failed`, shorten the wires, confirm the sensor type is DHT22 rather than DHT11, and check that DATA is not connected to GPIO 27—the touch sensor uses GPIO 27.
+
+## OLED menu does not open
+
+Hold the TTP223 continuously for at least 1.2 seconds. A short tap pets the companion or advances an already-open menu. Confirm TTP223 OUT is connected to GPIO 27 and that the display has not been turned off with `POWER|OFF`.
+
 ## TTP223 touch sensor does not react
 
 Wire `VCC` to `3V3`, `GND` to `GND`, and `OUT` to GPIO 27. Do not use 5V or VIN. See [DESK_COMPANION.md](DESK_COMPANION.md) for gesture and wiring troubleshooting.
@@ -55,6 +65,10 @@ If the firmware reports that neither address was found, recheck power and swap S
 ## `Adafruit_GFX.h: No such file or directory`
 
 Install **Adafruit GFX Library by Adafruit** through Arduino IDE's Library Manager. Also install **Adafruit SSD1306 by Adafruit** and accept all dependencies.
+
+## `DHT.h: No such file or directory`
+
+Install **DHT sensor library by Adafruit** through Arduino IDE's Library Manager and choose **Install All** when prompted.
 
 ## Display remains on `WAITING FOR PC`
 

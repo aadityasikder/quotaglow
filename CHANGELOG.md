@@ -4,6 +4,23 @@ All notable changes to QuotaGlow are documented here.
 
 The project follows [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - Unreleased
+
+### Added
+
+- DHT22 room temperature and humidity monitoring on GPIO 26.
+- Touch-controlled OLED menu with persistent Companion, Codex Usage, Room Climate, and Auto Rotate modes.
+- On-demand Wi-Fi pairing information without silently unpairing an existing module.
+- Local-first companion moods that work without Codex usage data.
+- Room climate setup guide and future-feature roadmap.
+
+### Changed
+
+- Initial Wi-Fi and pairing notices now time out so they do not permanently replace the selected home screen.
+- The legacy face-first preference is migrated automatically to the new saved home-mode setting.
+
+USB, Wi-Fi, pairing, desktop-only, and legacy display protocols remain backward compatible.
+
 ## [1.3.0] - 2026-10-06
 
 ### Added
@@ -58,6 +75,7 @@ USB, desktop-only, and demo modes remain backward compatible. Bluetooth LE is de
 - Demo mode, stale-data handling, and USB serial protocol.
 
 [1.3.0]: https://github.com/aadityasikder/quotaglow/compare/v1.2.0...v1.3.0
+[1.4.0]: https://github.com/aadityasikder/quotaglow/compare/v1.3.0...v1.4.0
 [1.2.0]: https://github.com/aadityasikder/quotaglow/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/aadityasikder/quotaglow/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aadityasikder/quotaglow/releases/tag/v1.0.0

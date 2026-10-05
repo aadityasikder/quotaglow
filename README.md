@@ -1,13 +1,13 @@
 # QuotaGlow
 
-**A privacy-first desktop widget and optional ESP32 OLED display for Codex usage limits.**
+**A privacy-first ESP32 desk companion with room sensing, touch controls, and optional Codex usage.**
 
 [![Release](https://img.shields.io/github/v/release/aadityasikder/quotaglow?display_name=tag)](https://github.com/aadityasikder/quotaglow/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-6f62ff.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4.svg)](#requirements)
 [![Hardware: Optional](https://img.shields.io/badge/ESP32-optional-65d6ad.svg)](#optional-esp32-oled)
 
-QuotaGlow shows your Codex usage in a small always-on-top Windows widget. With an ESP32 and OLED, it can mirror the same information over USB or trusted local Wi-Fi.
+QuotaGlow is an expandable ESP32 desk companion. Its OLED can show an animated face, room temperature and humidity, and optional Codex usage data received from the Windows widget over USB or trusted local Wi-Fi.
 
 ## Features
 
@@ -18,6 +18,9 @@ QuotaGlow shows your Codex usage in a small always-on-top Windows widget. With a
 - Optional start with Windows
 - Optional ESP32 + SSD1306 OLED display
 - Optional TTP223 touch sensor for an animated desk companion
+- Optional DHT11 or DHT22 room temperature and humidity sensor
+- Optional LDR ambient-light sensor with automatic OLED brightness
+- Touch-controlled OLED menu with fixed and rotating display modes
 - USB or wireless local-network module connection
 - Browser-based Wi-Fi setup and six-digit pairing
 - Module connect/disconnect and OLED sleep controls
@@ -47,6 +50,7 @@ QuotaGlow shows your Codex usage in a small always-on-top Windows widget. With a
 - Four jumper wires and a USB data cable
 - Arduino IDE with ESP32 board support
 - `Adafruit GFX Library` and `Adafruit SSD1306`
+- `DHT sensor library` by Adafruit
 
 ## Quick start: desktop widget only
 
@@ -90,6 +94,8 @@ In **Arduino IDE → Tools → Manage Libraries**, install:
 
 Accept **Install All** if Arduino IDE offers required dependencies.
 
+Also install **DHT sensor library by Adafruit** for room temperature and humidity support.
+
 ### 3. Upload the firmware
 
 Open and upload:
@@ -98,7 +104,7 @@ Open and upload:
 firmware/codex_usage_monitor/codex_usage_monitor.ino
 ```
 
-The OLED should show `WAITING FOR PC`. The firmware automatically detects addresses `0x3C` and `0x3D`.
+The OLED should show the QuotaGlow startup screen followed by Wi-Fi information or the saved home mode. The firmware automatically detects addresses `0x3C` and `0x3D`.
 
 ### 4. Connect over USB
 
@@ -128,7 +134,35 @@ QuotaGlow can show an animated face and react when you pet it. Connect a standar
 | `GND` | `GND` |
 | `OUT` | `D27` / GPIO 27 |
 
-Use `3V3`, never `VIN` or 5V. Tap the sensor to pet the companion. Hold it for about 1.2 seconds to switch persistently between the face and usage-dashboard screens.
+Use `3V3`, never `VIN` or 5V. Tap the sensor to pet the companion. Hold it for about 1.2 seconds to open the OLED menu.
+
+### Add the room climate sensor
+
+The firmware defaults to the DHT11 used by the current reference build. Connect it as follows:
+
+| DHT11 label | ESP32 label |
+|---|---|
+| `VCC` | `3V3` |
+| `GND` | `GND` |
+| `DATA` / `OUT` | `D26` / GPIO 26 |
+
+A bare four-pin sensor needs a 4.7–10 kΩ pull-up resistor between `DATA` and `3V3`. Most three-pin modules already include one. Use 3.3V, not 5V. DHT22 owners can change `DHT_TYPE` from `DHT11` to `DHT22` before uploading.
+
+### Add ambient awareness
+
+Create an LDR voltage divider on GPIO 34:
+
+```text
+3V3 ── LDR ──┬── GPIO 34
+             │
+          10 kΩ
+             │
+            GND
+```
+
+GPIO 34 is an ADC1 input, so it works while Wi-Fi is active. The LDR enables automatic OLED brightness, a sleepy dark-room face, touch-to-wake, sudden-light reactions, and an Ambient Light screen. Use **Calibrate Light** in the touch menu after wiring it. See [Ambient awareness](doc/AMBIENT_LIGHT.md).
+
+Hold the touch sensor for 1.2 seconds to open the OLED menu. Tap to move and hold to select **Companion**, **Codex Usage**, **Room Climate**, **Auto Rotate**, or **Wi-Fi Pairing**. See the [room climate and OLED menu guide](doc/ROOM_CLIMATE.md).
 
 ## Widget controls
 
@@ -159,6 +193,9 @@ Settings are saved in `%LOCALAPPDATA%\QuotaGlow\settings.json`. This file contai
 - [Wi-Fi setup and pairing](doc/WIFI_SETUP.md)
 - [Wi-Fi discovery and local API](doc/WIFI_API.md)
 - [Desk companion guide](doc/DESK_COMPANION.md)
+- [Room climate and OLED menu](doc/ROOM_CLIMATE.md)
+- [Ambient awareness and LDR setup](doc/AMBIENT_LIGHT.md)
+- [Feature roadmap](doc/ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)

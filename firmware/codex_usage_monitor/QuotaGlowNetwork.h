@@ -8,3 +8,4 @@ using QuotaGlowDisplayHandler = void (*)(const String &line1, const String &line
 void beginQuotaGlowNetwork(QuotaGlowMessageHandler messageHandler,
                            QuotaGlowDisplayHandler displayHandler);
 void loopQuotaGlowNetwork();
+void showQuotaGlowPairingInfo();

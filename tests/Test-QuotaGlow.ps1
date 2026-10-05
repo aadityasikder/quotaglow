@@ -57,15 +57,22 @@ $networkSource = Get-Content -Raw (Join-Path $projectRoot 'firmware\codex_usage_
 foreach($required in 'QUOTAGLOW_DISCOVER_V1','/api/v1/info','/api/v1/pair','/api/v1/message','/api/v1/unpair','/api/v1/wifi/reset','Authorization','PAIR_CODE_LIFETIME_MS') {
     if(-not $networkSource.Contains($required)){throw "Firmware network interface is missing $required."}
 }
+if (-not $networkSource.Contains('showQuotaGlowPairingInfo()') -or -not $networkSource.Contains('ALREADY PAIRED')) {
+    throw 'Firmware is missing safe on-demand pairing information.'
+}
 Write-Host 'PASS: firmware Wi-Fi API surface'
 
 $firmwareSource = Get-Content -Raw (Join-Path $projectRoot 'firmware\codex_usage_monitor\codex_usage_monitor.ino')
-foreach($required in 'TOUCH_PIN = 27','updateTouch()','toggleCompanionMode()','drawCompanionFace','companionPreferences.begin','PET_REACTION_MS') {
+foreach($required in 'DHT_PIN = 26','DHT_TYPE = DHT11','TOUCH_PIN = 27','HOME_CLIMATE','HOME_AUTO','drawMenu()','updateClimate()','showQuotaGlowPairingInfo()','companionPreferences.begin','PET_REACTION_MS') {
     if(-not $firmwareSource.Contains($required)){throw "Desk companion firmware is missing $required."}
 }
-if ($firmwareSource.IndexOf('reaction == REACTION_EXCITED') -gt $firmwareSource.IndexOf('mood == MOOD_CONFUSED')) {
-    throw 'Pet reactions must be rendered before the no-data confused face.'
+foreach($required in 'LDR_PIN = 34','HOME_AMBIENT','SCREEN_AMBIENT','updateAmbientLight()','SSD1306_SETCONTRAST','CALIBRATION_DARK','autoBright','lightDark','lightBright','REACTION_SURPRISED') {
+    if(-not $firmwareSource.Contains($required)){throw "Ambient-awareness firmware is missing $required."}
 }
-Write-Host 'PASS: desk companion firmware surface'
+if ($firmwareSource.Contains('toggleCompanionMode()')) { throw 'Legacy two-mode touch toggle is still present.' }
+if ($firmwareSource.IndexOf('if (menuActive)') -gt $firmwareSource.IndexOf('if (networkMessageActive)')) {
+    throw 'The touch menu must render before temporary network messages.'
+}
+Write-Host 'PASS: room climate and navigation firmware surface'
 
 Write-Host 'All QuotaGlow checks passed.' -ForegroundColor Green

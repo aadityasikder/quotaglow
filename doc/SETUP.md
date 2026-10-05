@@ -1,10 +1,10 @@
 # Complete Setup Guide
 
-QuotaGlow 1.2 supports desktop-only use, USB serial, and local Wi-Fi. For wireless provisioning and pairing, follow [WIFI_SETUP.md](WIFI_SETUP.md) after uploading the firmware.
+QuotaGlow supports desktop-only use, USB serial, local Wi-Fi, and independent ESP32 companion features. For wireless provisioning and pairing, follow [WIFI_SETUP.md](WIFI_SETUP.md) after uploading the firmware.
 
 This guide starts with the desktop widget because it is the fastest way to verify that QuotaGlow can read Codex usage. The ESP32 and OLED are optional and can be added afterward.
 
-An optional TTP223 sensor adds touch reactions and a face-first desk companion. See [DESK_COMPANION.md](DESK_COMPANION.md) after confirming the OLED works.
+Optional TTP223 and DHT11/DHT22 sensors add touch navigation, companion reactions, and room climate readings. See [DESK_COMPANION.md](DESK_COMPANION.md) and [ROOM_CLIMATE.md](ROOM_CLIMATE.md) after confirming the OLED works.
 
 ## Part 1: Desktop widget
 
@@ -84,8 +84,9 @@ In **Arduino IDE → Tools → Manage Libraries**, install:
 
 1. **Adafruit GFX Library** by Adafruit
 2. **Adafruit SSD1306** by Adafruit
+3. **DHT sensor library** by Adafruit
 
-Choose **Install All** if Arduino IDE asks about dependencies.
+Choose **Install All** if Arduino IDE asks about dependencies, including Adafruit Unified Sensor.
 
 ### Upload the firmware
 
@@ -94,7 +95,35 @@ Choose **Install All** if Arduino IDE asks about dependencies.
 3. Select its COM port under **Tools → Port**.
 4. Upload the sketch.
 
-Success looks like `WAITING FOR PC` on the OLED.
+Success starts with the QuotaGlow startup screen. Wi-Fi setup information may appear temporarily, after which the saved home mode is restored.
+
+### Add the room sensor
+
+Disconnect USB before changing wires, then connect the default DHT11 module:
+
+| DHT11 label | ESP32 label |
+|---|---|
+| `VCC` | `3V3` |
+| `GND` | `GND` |
+| `DATA` / `OUT` | `D26` / GPIO 26 |
+
+For a bare four-pin sensor, place a 4.7–10 kΩ resistor between `DATA` and `3V3`. Three-pin modules commonly include this resistor. The first reading may take several seconds after startup. To use a DHT22, change `DHT_TYPE` in the sketch from `DHT11` to `DHT22`.
+
+Hold the TTP223 for 1.2 seconds to open the display menu, tap to move, and hold to select. Full controls and climate-status meanings are in [ROOM_CLIMATE.md](ROOM_CLIMATE.md).
+
+### Add the ambient-light sensor
+
+Use an LDR and 10 kΩ resistor as a voltage divider:
+
+```text
+3V3 ── LDR ──┬── GPIO 34
+             │
+          10 kΩ
+             │
+            GND
+```
+
+GPIO 34 is input-only and belongs to ADC1, which avoids the ESP32 ADC2/Wi-Fi conflict. Never connect GPIO 34 to 5V. After uploading, open the touch menu and select **Calibrate Light**. Cover the LDR and hold to save the dark reading, then shine a bright light and hold again. See [AMBIENT_LIGHT.md](AMBIENT_LIGHT.md) for complete behavior.
 
 For diagnostics, open Serial Monitor at **115200 baud**. A detected display reports:
 

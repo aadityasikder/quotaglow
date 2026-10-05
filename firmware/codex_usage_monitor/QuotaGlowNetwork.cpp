@@ -17,7 +17,7 @@ constexpr unsigned long PAIR_CODE_LIFETIME_MS = 600000UL;
 constexpr unsigned long PAIR_ATTEMPT_WINDOW_MS = 60000UL;
 constexpr int MAX_PAIR_ATTEMPTS_PER_WINDOW = 5;
 constexpr char DISCOVERY_REQUEST[] = "QUOTAGLOW_DISCOVER_V1";
-constexpr char FIRMWARE_VERSION[] = "1.3.0";
+constexpr char FIRMWARE_VERSION[] = "1.4.0";
 
 Preferences preferences;
 WebServer webServer(HTTP_PORT);
@@ -370,4 +370,27 @@ void loopQuotaGlowNetwork() {
     WiFi.begin(savedSsid.c_str(), savedPassword.c_str());
   }
   if (millis() - disconnectedSince >= WIFI_CONNECT_TIMEOUT_MS) startSetupMode();
+}
+
+void showQuotaGlowPairingInfo() {
+  if (onDisplay == nullptr) return;
+
+  if (setupMode) {
+    String setupName = "QuotaGlow-Setup-" + deviceId.substring(deviceId.length() - 4);
+    onDisplay(setupName, "Open 192.168.4.1");
+    return;
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    onDisplay("Wi-Fi offline", "Reconnect pending");
+    return;
+  }
+
+  if (deviceToken.length() == 64) {
+    onDisplay("ALREADY PAIRED", WiFi.localIP().toString());
+    return;
+  }
+
+  if (pairingCode.length() != 6 || pairingCodeExpired()) createPairingCode();
+  else onDisplay("Pair: " + pairingCode, WiFi.localIP().toString());
 }
